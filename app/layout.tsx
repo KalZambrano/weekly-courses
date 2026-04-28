@@ -7,7 +7,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'EduBoost - Plataforma de Refuerzo Académico',
+  title: 'UTP+ - Plataforma de Refuerzo Académico',
   description: 'Plataforma educativa con gamificación para refuerzo académico mediante talleres interactivos 24/7',
   generator: 'v0.app',
   icons: {
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
         media: '(prefers-color-scheme: dark)',
       },
       {
-        url: '/icon.svg',
+        url: '/favicon.ico',
         type: 'image/svg+xml',
       },
     ],

@@ -57,7 +57,7 @@ export default function StudentDashboard() {
         
         {/* Motivational Message */}
         {motivationalMessage && (
-          <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+          <Card className="bg-linear-to-r from-primary/10 to-accent/10 border-primary/20">
             <CardContent className="flex items-center gap-3 p-4">
               <Sparkles className="size-6 text-primary shrink-0" />
               <p className="text-sm font-medium italic text-pretty">
@@ -69,7 +69,7 @@ export default function StudentDashboard() {
       </div>
       
       {/* Stats Grid */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatsCard
           title="Puntos Totales"
           value={currentStudent.points.toLocaleString()}
@@ -86,10 +86,10 @@ export default function StudentDashboard() {
         <StatsCard
           title="Racha Actual"
           value={currentStudent.streak}
-          subtitle={currentStudent.streak === 1 ? 'día consecutivo' : 'días consecutivos'}
+          subtitle={currentStudent.streak === 1 ? 'semana consecutiva' : 'semanas consecutivas'}
           icon={<Flame className="size-6" />}
         />
-        <Card className="overflow-hidden">
+        {/* <Card className="overflow-hidden">
           <CardContent className="flex items-center justify-center p-6">
             <ProgressRing progress={progressToNextLevel} size={100}>
               <div className="text-center">
@@ -98,7 +98,7 @@ export default function StudentDashboard() {
               </div>
             </ProgressRing>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
       
       {/* Main Content Grid */}

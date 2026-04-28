@@ -28,7 +28,7 @@ export function MultiplierIndicator({ streakDay, className }: MultiplierIndicato
             className={cn(
               "inline-flex items-center gap-2 rounded-full px-4 py-2 font-bold transition-all",
               isActive 
-                ? "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg" 
+                ? "bg-linear-to-r from-primary to-accent text-primary-foreground shadow-lg" 
                 : "bg-muted text-muted-foreground",
               className
             )}
@@ -41,7 +41,7 @@ export function MultiplierIndicator({ streakDay, className }: MultiplierIndicato
             <span className="text-lg">{multiplierInfo.label}</span>
             {isActive && streakDay > 0 && (
               <span className="ml-1 text-sm opacity-90">
-                ({streakDay} {streakDay === 1 ? 'día' : 'días'})
+                ({streakDay} {streakDay === 1 ? 'semana' : 'semanas'})
               </span>
             )}
           </div>

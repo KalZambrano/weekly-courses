@@ -59,7 +59,7 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
         {!collapsed && (
           <Link href={`/${role}`} className="flex items-center gap-2">
             <GraduationCap className="size-8 text-sidebar-primary" />
-            <span className="text-lg font-bold">EduBoost</span>
+            <span className="text-lg font-bold">UTP+ Reforce</span>
           </Link>
         )}
         {collapsed && (
