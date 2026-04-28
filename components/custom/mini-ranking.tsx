@@ -77,7 +77,7 @@ export function MiniRanking({ ranking, currentUserId, limit = 5 }: MiniRankingPr
       </CardContent>
       <CardFooter className="border-t pt-4">
         <Link href="/student/ranking" className="w-full">
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full cursor-pointer">
             Ver ranking completo
             <ArrowRight className="ml-2 size-4" />
           </Button>

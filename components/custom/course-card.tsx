@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { Course } from "@/data/mock-data";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 interface CourseCardProps {
   course: Course;
@@ -18,8 +17,8 @@ export function CourseCard({
 
   return (
     <Link href={`/student/courses/${course.id}`} className="block">
-      <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
-        <CardContent className="flex-1 p-6">
+      <Card className="flex h-55 flex-col overflow-hidden transition-all hover:shadow-lg">
+        <CardContent className="flex flex-1 flex-col p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="text-3xl">{course.icon}</span>
@@ -35,34 +34,27 @@ export function CourseCard({
             )}
           </div>
 
-          <div className="mt-6 space-y-2">
+          <div className="mt-auto space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Progreso</span>
-              <span className="font-medium">{course.progress}%</span>
             </div>
-            <Progress value={course.progress} className="h-1" />
+            <div className="relative">
+              <Progress value={course.progress} className="h-2" />
+              <div
+                className="absolute top-full mt-1.5 -translate-x-1/2 text-[10px] whitespace-nowrap bg-blue-300 px-1.5 py-0.5 rounded-sm font-semibold"
+                style={{ left: `${course.progress}%` }}
+              >
+                {course.progress}%
+              </div>
+              {/* <div
+                className="absolute top-full mt-1.5 -translate-x-1/2 text-xs text-muted-foreground whitespace-nowrap"
+                style={{ left: `${course.progress}%`, top: 'calc(100% + 1.5rem)' }}
+              >
+                {course.completedActivities}/{course.totalActivities} actividades
+              </div> */}
+            </div>
           </div>
         </CardContent>
-        <CardFooter>
-          <p className="text-xs text-muted-foreground">
-            {course.completedActivities} de {course.totalActivities} actividades
-            completadas
-          </p>
-        </CardFooter>
-
-        {/* {showContinueButton && (
-          <CardFooter className="border-t bg-muted/30 px-6 py-4">
-            <Link href={`/student/courses/${course.id}`} className="w-full">
-              <Button
-                className="w-full"
-                variant={isCompleted ? "outline" : "default"}
-              >
-                {isCompleted ? "Revisar" : "Continuar"}
-                <ArrowRight className="ml-2 size-4" />
-              </Button>
-            </Link>
-          </CardFooter>
-        )} */}
       </Card>
     </Link>
   );

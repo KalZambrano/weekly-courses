@@ -45,7 +45,7 @@ export default function RankingPage() {
           {/* 1st Place */}
           <div className="flex flex-col items-center">
             <div className="relative">
-              <Crown className="absolute -top-6 left-1/2 -translate-x-1/2 size-10 text-gold animate-bounce" />
+              <Crown className="absolute -top-8 left-1/2 -translate-x-1/2 size-10 text-gold" />
               <Avatar className="size-28 border-4 border-gold ring-4 ring-gold/30">
                 <AvatarFallback className="bg-gold text-gold-foreground text-2xl font-bold">
                   {topThree[0]?.avatar}
