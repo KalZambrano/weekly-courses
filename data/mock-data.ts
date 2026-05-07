@@ -1,3 +1,4 @@
+//weekly-courses/data/mock-data.ts
 // Types
 export interface Student {
   id: string

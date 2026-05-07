@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/dashboard-sidebar.tsx
 'use client'
 
 import Link from 'next/link'

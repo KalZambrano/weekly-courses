@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/recent-activity-list.tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getActivityTypeInfo } from '@/lib/gamification'
 import type { RecentActivity } from '@/data/mock-data'

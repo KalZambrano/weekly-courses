@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/level-badge.tsx
 import { cn } from '@/lib/utils'
 import type { Level } from '@/lib/gamification'
 

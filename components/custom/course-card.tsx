@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/course-card.tsx
 import Link from "next/link";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

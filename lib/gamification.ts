@@ -1,3 +1,4 @@
+//weekly-courses/lib/gamification.ts
 export type Level = 'Bronce' | 'Plata' | 'Oro'
 
 export interface MultiplierInfo {
