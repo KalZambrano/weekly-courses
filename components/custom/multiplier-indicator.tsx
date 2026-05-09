@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/multiplier-indicator.tsx
 'use client'
 
 import { cn } from '@/lib/utils'

@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/course-card.tsx
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";

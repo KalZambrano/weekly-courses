@@ -1,3 +1,4 @@
+//weekly-courses/app/(dashboard)/teacher/courses/page.tsx
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

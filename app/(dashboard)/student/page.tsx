@@ -1,3 +1,4 @@
+//weekly-courses/app/(dashboard)/student/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -129,7 +130,6 @@ export default function StudentDashboard() {
             currentUserId={currentStudent.id}
             limit={5}
           />
-
         </div>
 
         {/* Right Column - Ranking */}

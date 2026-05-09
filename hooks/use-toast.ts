@@ -1,3 +1,4 @@
+//weekly-courses/hooks/use-toast.ts
 'use client'
 
 // Inspired by react-hot-toast library

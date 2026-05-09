@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/progress-ring.tsx
 'use client'
 
 import { cn } from '@/lib/utils'
