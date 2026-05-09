@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/stats-card.tsx
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 

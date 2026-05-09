@@ -1,3 +1,4 @@
+//weekly-courses/app/(dashboard)/student/courses/page.tsx
 'use client'
 
 import { useState } from 'react'

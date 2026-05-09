@@ -1,3 +1,4 @@
+//weekly-courses/data/mock-data.ts
 // Types
 export interface Student {
   id: string
@@ -14,6 +15,8 @@ export interface Student {
 export interface Course {
   id: string
   name: string
+  section: string
+  teacher: string
   description: string
   icon: string
   progress: number
@@ -67,6 +70,8 @@ export const courses: Course[] = [
   {
     id: '1',
     name: 'Matemáticas Avanzadas',
+    section: '156245',
+    teacher: 'Javier Ibarreche',
     description: 'Álgebra, geometría y cálculo para refuerzo académico',
     icon: '📐',
     progress: 75,
@@ -90,6 +95,8 @@ export const courses: Course[] = [
   {
     id: '2',
     name: 'Física Fundamental',
+    section: '156230',
+    teacher: 'Juan Pérez',
     description: 'Mecánica, termodinámica y ondas',
     icon: '⚡',
     progress: 50,
@@ -111,6 +118,8 @@ export const courses: Course[] = [
   {
     id: '3',
     name: 'Química Orgánica',
+    section: '176288',
+    teacher: 'María González',
     description: 'Compuestos orgánicos y reacciones químicas',
     icon: '🧪',
     progress: 30,
@@ -130,6 +139,8 @@ export const courses: Course[] = [
   {
     id: '4',
     name: 'Programación Básica',
+    section: '176289',
+    teacher: 'Carlos Rodríguez',
     description: 'Fundamentos de programación y algoritmos',
     icon: '💻',
     progress: 90,

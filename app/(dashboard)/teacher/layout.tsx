@@ -1,3 +1,4 @@
+//weekly-courses/app/(dashboard)/teacher/layout.tsx
 import { DashboardSidebar } from '@/components/custom/dashboard-sidebar'
 
 export default function TeacherLayout({

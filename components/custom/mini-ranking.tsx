@@ -1,3 +1,4 @@
+//weekly-courses/components/custom/mini-ranking.tsx
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -77,7 +78,7 @@ export function MiniRanking({ ranking, currentUserId, limit = 5 }: MiniRankingPr
       </CardContent>
       <CardFooter className="border-t pt-4">
         <Link href="/student/ranking" className="w-full">
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full cursor-pointer">
             Ver ranking completo
             <ArrowRight className="ml-2 size-4" />
           </Button>
