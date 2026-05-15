@@ -1,18 +1,19 @@
 //weekly-courses/app/(dashboard)/student/courses/[id]/page.tsx
 'use client'
 
-import { use, useState } from 'react' // Añadimos useState
+import { use, useState } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ActivityItem } from '@/components/custom/activity-item'
-import { courses } from '@/data/mock-data'
-import type { Activity } from '@/data/mock-data' // Añadimos el tipo Activity
+import { MiniRanking } from '@/components/custom/mini-ranking'
+import { courses, allStudents, currentStudent } from '@/data/mock-data'
+import type { Activity, RankingStudent } from '@/data/mock-data'
 import { ArrowLeft, BookOpen, CheckCircle2, Clock, Trophy } from 'lucide-react'
 
-// Importamos tus nuevos componentes
 import { ActivityViewer } from '@/components/custom/activity-viewer'
 import { QuizFeedback } from '@/components/custom/quiz-feedback'
 
@@ -24,13 +25,26 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { id } = use(params)
   const course = courses.find(c => c.id === id)
 
-  // 1. ESTADO: Controla qué actividad está abierta actualmente
   const [activeActivity, setActiveActivity] = useState<Activity | null>(null)
 
   if (!course) {
     notFound()
   }
 
+  // LÓGICA DE RANKING DEL CURSO
+  const courseRanking: RankingStudent[] = allStudents
+    .filter(s => s.enrolledCourses.includes(course.id))
+    .sort((a, b) => b.points - a.points)
+    .map((s, index) => ({
+      id: s.id,
+      name: s.name,
+      avatar: s.avatar,
+      points: s.points,
+      level: s.level,
+      position: index + 1
+    }))
+
+  const currentUserRanking = courseRanking.find(s => s.id === currentStudent.id)
   const completedActivities = course.activities.filter(a => a.status === 'completed')
   const inProgressActivities = course.activities.filter(a => a.status === 'in-progress')
   const pendingActivities = course.activities.filter(a => a.status === 'pending')
@@ -42,11 +56,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     return sum + (isNaN(minutes) ? 0 : minutes)
   }, 0)
 
-  // 2. INTERCEPTOR: Si hay una actividad seleccionada, mostramos esa pantalla en lugar del temario
   if (activeActivity) {
     return (
       <div className="min-h-screen p-8">
-        {/* Botón para cerrar la actividad y volver al temario */}
         <Button
           variant="ghost"
           className="mb-6 gap-2"
@@ -56,7 +68,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           Volver al temario
         </Button>
 
-        {/* Si es un quiz, mostramos el feedback, sino, el visor de actividad normal */}
         {activeActivity.type === 'quiz' ? (
           <QuizFeedback />
         ) : (
@@ -66,10 +77,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     )
   }
 
-  // 3. PANTALLA NORMAL: Si no hay actividad seleccionada, mostramos el temario del curso
   return (
     <div className="min-h-screen p-8">
-      {/* Back Button */}
       <Link href="/student/courses">
         <Button variant="ghost" className="mb-6 gap-2">
           <ArrowLeft className="size-4" />
@@ -77,7 +86,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </Button>
       </Link>
 
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-start gap-4">
           <span className="text-5xl">{course.icon}</span>
@@ -89,7 +97,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           </div>
         </div>
 
-        {/* Progress Bar */}
         <div className="mt-6 space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Progreso del curso</span>
@@ -99,125 +106,106 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <BookOpen className="size-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Actividades</p>
-              <p className="text-xl font-bold">
-                {course.completedActivities}/{course.totalActivities}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-lg bg-success/10 p-2">
-              <CheckCircle2 className="size-5 text-success" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Completadas</p>
-              <p className="text-xl font-bold">{completedActivities.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-lg bg-gold/10 p-2">
-              <Trophy className="size-5 text-gold" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Puntos</p>
-              <p className="text-xl font-bold">
-                {earnedPoints}/{totalPoints}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-lg bg-muted p-2">
-              <Clock className="size-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Duración total</p>
-              <p className="text-xl font-bold">{totalDuration} min</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-primary/10 p-2"><BookOpen className="size-5 text-primary" /></div><div><p className="text-sm text-muted-foreground">Actividades</p><p className="text-xl font-bold">{course.completedActivities}/{course.totalActivities}</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-success/10 p-2"><CheckCircle2 className="size-5 text-success" /></div><div><p className="text-sm text-muted-foreground">Completadas</p><p className="text-xl font-bold">{completedActivities.length}</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-gold/10 p-2"><Trophy className="size-5 text-gold" /></div><div><p className="text-sm text-muted-foreground">Puntos</p><p className="text-xl font-bold">{earnedPoints}/{totalPoints}</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-muted p-2"><Clock className="size-5 text-muted-foreground" /></div><div><p className="text-sm text-muted-foreground">Duración total</p><p className="text-xl font-bold">{totalDuration} min</p></div></CardContent></Card>
       </div>
 
-      {/* Activities List */}
-      <div className="space-y-8">
-        {/* In Progress */}
-        {inProgressActivities.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <span className="size-3 rounded-full bg-primary animate-pulse" />
-                En Progreso
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {inProgressActivities.map((activity) => (
-                <ActivityItem
-                  key={activity.id}
-                  activity={activity}
-                  onStart={() => setActiveActivity(activity)} // Conectado al botón iniciar
-                />
-              ))}
-            </CardContent>
-          </Card>
-        )}
+      <Tabs defaultValue="temario" className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="temario">Temario del Curso</TabsTrigger>
+          <TabsTrigger value="ranking">Ranking Local</TabsTrigger>
+        </TabsList>
 
-        {/* Pending */}
-        {pendingActivities.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <span className="size-3 rounded-full bg-muted-foreground/30" />
-                Pendientes ({pendingActivities.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {pendingActivities.map((activity) => (
-                <ActivityItem
-                  key={activity.id}
-                  activity={activity}
-                  onStart={() => setActiveActivity(activity)} // Conectado al botón iniciar
-                />
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        <TabsContent value="temario" className="space-y-8">
+          {inProgressActivities.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><span className="size-3 rounded-full bg-primary animate-pulse" />En Progreso</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {inProgressActivities.map((activity) => (
+                  <ActivityItem key={activity.id} activity={activity} onStart={() => setActiveActivity(activity)} />
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Completed */}
-        {completedActivities.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <CheckCircle2 className="size-5 text-success" />
-                Completadas ({completedActivities.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {completedActivities.map((activity) => (
-                <ActivityItem
-                  key={activity.id}
-                  activity={activity}
-                />
-              ))}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+          {pendingActivities.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><span className="size-3 rounded-full bg-muted-foreground/30" />Pendientes ({pendingActivities.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {pendingActivities.map((activity) => (
+                  <ActivityItem key={activity.id} activity={activity} onStart={() => setActiveActivity(activity)} />
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {completedActivities.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><CheckCircle2 className="size-5 text-success" />Completadas ({completedActivities.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {completedActivities.map((activity) => (
+                  <ActivityItem key={activity.id} activity={activity} />
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="ranking">
+          <div className="grid gap-6 md:grid-cols-3 items-start">
+            <div className="md:col-span-2">
+              <MiniRanking
+                ranking={courseRanking}
+                currentUserId={currentStudent.id}
+                limit={courseRanking.length}
+                title="Ranking del Curso" 
+                showFooter={false}        
+              />
+            </div>
+
+            <div className="md:col-span-1">
+              <Card className="sticky top-8">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg">Tu Desempeño</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex flex-col items-center justify-center text-center space-y-2">
+                    <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                      #{currentUserRanking?.position || '-'}
+                    </div>
+                    <div>
+                      <p className="font-semibold">Posición en el curso</p>
+                      <p className="text-sm text-muted-foreground">
+                        De {courseRanking.length} estudiantes
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 border-t pt-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tus puntos:</span>
+                      <span className="font-bold text-primary">
+                        {currentUserRanking?.points.toLocaleString()} pts
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Nivel actual:</span>
+                      <span className="font-bold">{currentUserRanking?.level}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">
+                    ¡Sigue completando actividades para subir en la tabla de posiciones!
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
