@@ -83,7 +83,7 @@ export default function StudentDashboard() {
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatsCard
           title="Puntos Totales"
-          value={currentStudent.points.toLocaleString()}
+          value={currentStudent.points.toLocaleString('es-ES')}
           subtitle={
             pointsToNextLevel
               ? `${pointsToNextLevel} para ${currentStudent.level === "Bronce" ? "Plata" : "Oro"}`
