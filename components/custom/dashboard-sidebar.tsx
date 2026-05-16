@@ -12,10 +12,12 @@ import {
   BarChart3,
   GraduationCap,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import { useAuth } from '@/context/AuthContext'
 
 interface NavItem {
   label: string
@@ -43,6 +45,7 @@ const teacherNavItems: NavItem[] = [
 export function DashboardSidebar({ role }: DashboardSidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const { logout } = useAuth()
   
   const navItems = role === 'student' ? studentNavItems : teacherNavItems
   const otherRole = role === 'student' ? 'teacher' : 'student'
@@ -109,6 +112,21 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
             {!collapsed && <span className="ml-3">{otherRoleLabel}</span>}
           </Button>
         </Link>
+      </div>
+      
+      {/* Logout */}
+      <div className="border-t border-sidebar-border p-3">
+        <Button
+          variant="ghost"
+          onClick={logout}
+          className={cn(
+            "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+            collapsed && "justify-center px-2"
+          )}
+        >
+          <LogOut className="size-5" />
+          {!collapsed && <span className="ml-3">Cerrar Sesión</span>}
+        </Button>
       </div>
       
       {/* Collapse Toggle */}

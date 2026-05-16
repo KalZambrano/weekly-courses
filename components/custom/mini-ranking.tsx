@@ -12,35 +12,43 @@ interface MiniRankingProps {
   ranking: RankingStudent[]
   currentUserId: string
   limit?: number
+  title?: string       
+  showFooter?: boolean 
 }
 
-export function MiniRanking({ ranking, currentUserId, limit = 5 }: MiniRankingProps) {
+export function MiniRanking({
+  ranking,
+  currentUserId,
+  limit = 5,
+  title = "Ranking Global", 
+  showFooter = true         
+}: MiniRankingProps) {
   const displayedRanking = ranking.slice(0, limit)
-  
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Trophy className="size-5 text-gold" />
-          Ranking Global
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {displayedRanking.map((student) => {
           const isCurrentUser = student.id === currentUserId
           const isTopThree = student.position <= 3
-          
+
           return (
-            <div 
+            <div
               key={student.id}
               className={cn(
                 "flex items-center gap-3 rounded-lg p-3 transition-colors",
-                isCurrentUser 
-                  ? "bg-primary/10 ring-2 ring-primary/20" 
+                isCurrentUser
+                  ? "bg-primary/10 ring-2 ring-primary/20"
                   : "hover:bg-muted/50"
               )}
             >
-              <div 
+              <div
                 className={cn(
                   "flex size-8 items-center justify-center rounded-full text-sm font-bold",
                   student.position === 1 && "bg-gold text-gold-foreground",
@@ -51,7 +59,7 @@ export function MiniRanking({ ranking, currentUserId, limit = 5 }: MiniRankingPr
               >
                 {student.position}
               </div>
-              
+
               <Avatar className="size-9">
                 <AvatarFallback className={cn(
                   isCurrentUser ? "bg-primary text-primary-foreground" : "bg-secondary"
@@ -59,7 +67,7 @@ export function MiniRanking({ ranking, currentUserId, limit = 5 }: MiniRankingPr
                   {student.avatar}
                 </AvatarFallback>
               </Avatar>
-              
+
               <div className="flex-1 min-w-0">
                 <p className={cn(
                   "font-medium truncate",
@@ -70,20 +78,24 @@ export function MiniRanking({ ranking, currentUserId, limit = 5 }: MiniRankingPr
                 </p>
                 <LevelBadge level={student.level} size="sm" />
               </div>
-              
-              <p className="font-bold text-primary">{student.points.toLocaleString()}</p>
+
+              <p className="font-bold text-primary">{student.points.toLocaleString('es-ES')}</p>
             </div>
           )
         })}
       </CardContent>
-      <CardFooter className="border-t pt-4">
-        <Link href="/student/ranking" className="w-full">
-          <Button variant="outline" className="w-full cursor-pointer">
-            Ver ranking completo
-            <ArrowRight className="ml-2 size-4" />
-          </Button>
-        </Link>
-      </CardFooter>
+
+      {/* Renderizado condicional del footer */}
+      {showFooter && (
+        <CardFooter className="border-t pt-4">
+          <Link href="/student/ranking" className="w-full">
+            <Button variant="outline" className="w-full cursor-pointer">
+              Ver ranking completo
+              <ArrowRight className="ml-2 size-4" />
+            </Button>
+          </Link>
+        </CardFooter>
+      )}
     </Card>
   )
 }
