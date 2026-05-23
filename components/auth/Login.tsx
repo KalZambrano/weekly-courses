@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, User } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Login() {
   const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,10 +30,24 @@ export default function Login() {
     setError("");
 
     const success = await login(email, password);
-    if (!success) {
+    if (success) {
+      // Redirigir según el email
+      if (email.includes('student')) {
+        router.push('/student');
+      } else if (email.includes('teacher')) {
+        router.push('/teacher');
+      } else {
+        router.push('/student');
+      }
+    } else {
       setError("Credenciales inválidas");
     }
     setLoading(false);
+  };
+
+  const fillCredentials = (userEmail: string, userPassword: string) => {
+    setEmail(userEmail);
+    setPassword(userPassword);
   };
 
   return (
@@ -118,6 +134,40 @@ export default function Login() {
             >
               {loading ? "Iniciando sesión..." : "Ingresar"}
             </Button>
+
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <p className="text-sm text-slate-600 font-medium mb-3 text-center">
+                Usuarios de prueba
+              </p>
+              
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-10 rounded-xl border-slate-300 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-700 transition-all cursor-pointer text-left justify-start"
+                  onClick={() => fillCredentials('student@utp.edu.pe', 'student123')}
+                >
+                  <User className="h-4 w-4 mr-2 text-blue-600" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Estudiante</div>
+                    <div className="text-xs text-slate-500">student@utp.edu.pe</div>
+                  </div>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-10 rounded-xl border-slate-300 hover:bg-green-50 hover:border-green-300 text-slate-700 hover:text-green-700 transition-all cursor-pointer text-left justify-start"
+                  onClick={() => fillCredentials('teacher@utp.edu.pe', 'teacher123')}
+                >
+                  <User className="h-4 w-4 mr-2 text-green-600" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Profesor</div>
+                    <div className="text-xs text-slate-500">teacher@utp.edu.pe</div>
+                  </div>
+                </Button>
+              </div>
+            </div>
 
             <p className="text-center text-sm text-slate-500 pt-1">
               Plataforma Académica Institucional

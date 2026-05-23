@@ -2,9 +2,9 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { getActivityTypeInfo } from '@/lib/gamification'
+import { getActivityTypeInfo, getCurrentWeek, getDayMultiplierInfo, calculatePointsWithMultiplier } from '@/lib/gamification'
 import type { Activity } from '@/data/mock-data'
-import { CheckCircle2, Circle, PlayCircle, Clock } from 'lucide-react'
+import { CheckCircle2, Circle, PlayCircle, Clock, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ActivityItemProps {
@@ -35,13 +35,19 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
   const status = statusConfig[activity.status]
   const StatusIcon = status.icon
   
+  const currentWeek = getCurrentWeek()
+  const isCurrentWeekActivity = activity.weekNumber === currentWeek
+  const multiplierInfo = getDayMultiplierInfo()
+  const { points: calculatedPoints } = calculatePointsWithMultiplier(activity.points, new Date())
+  
   return (
     <div 
       className={cn(
         "flex items-center gap-4 rounded-lg border p-4 transition-all",
         activity.status === 'completed' && "bg-success/5 border-success/20",
         activity.status === 'in-progress' && "bg-primary/5 border-primary/20 ring-2 ring-primary/10",
-        activity.status === 'pending' && "hover:bg-muted/50"
+        activity.status === 'pending' && "hover:bg-muted/50",
+        !isCurrentWeekActivity && activity.status === 'pending' && "opacity-60"
       )}
     >
       {/* Status Icon */}
@@ -66,8 +72,50 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
             {activity.duration}
           </span>
           <span>|</span>
-          <span className="font-medium text-primary">+{activity.points} pts</span>
+          <span className="text-xs">Semana {activity.weekNumber}</span>
+          {!isCurrentWeekActivity && activity.status === 'pending' && (
+            <>
+              <span>|</span>
+              <span className="text-xs text-orange-600">Fuera de semana actual</span>
+            </>
+          )}
         </div>
+      </div>
+      
+      {/* Points with multiplier */}
+      <div className="flex flex-col items-end gap-1">
+        {activity.status === 'pending' && isCurrentWeekActivity && (
+          <div className="flex items-center gap-1 text-sm">
+            <Zap className="size-3 text-orange-500" />
+            <span className="font-medium text-primary">
+              +{calculatedPoints} pts
+            </span>
+            <span className="text-xs text-orange-600 font-semibold">
+              {multiplierInfo.label}
+            </span>
+          </div>
+        )}
+        {activity.status === 'pending' && !isCurrentWeekActivity && (
+          <div className="flex items-center gap-1 text-sm">
+            <span className="font-medium text-muted-foreground">
+              +{activity.points} pts
+            </span>
+            <span className="text-xs text-muted-foreground">
+              (Sin puntos)
+            </span>
+          </div>
+        )}
+        {activity.status === 'completed' && activity.completedAt && (
+          <div className="text-right">
+            <p className="text-sm font-medium text-success">+{activity.points}</p>
+            <p className="text-xs text-muted-foreground">
+              {new Date(activity.completedAt).toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'short'
+              })}
+            </p>
+          </div>
+        )}
       </div>
       
       {/* Action */}
@@ -80,17 +128,6 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
         <Button size="sm" variant="secondary" onClick={onStart}>
           Continuar
         </Button>
-      )}
-      {activity.status === 'completed' && activity.completedAt && (
-        <div className="text-right">
-          <p className="text-sm font-medium text-success">+{activity.points}</p>
-          <p className="text-xs text-muted-foreground">
-            {new Date(activity.completedAt).toLocaleDateString('es-ES', {
-              day: 'numeric',
-              month: 'short'
-            })}
-          </p>
-        </div>
       )}
     </div>
   )

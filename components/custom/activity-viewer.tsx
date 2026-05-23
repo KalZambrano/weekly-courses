@@ -6,17 +6,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { PlayCircle, CheckCircle2, BookOpen, Zap } from 'lucide-react'
+import { getDayMultiplierInfo, calculatePointsWithMultiplier, getCurrentWeek } from '@/lib/gamification'
+import type { Activity } from '@/data/mock-data'
 
-export function ActivityViewer() {
+interface ActivityViewerProps {
+  activity: Activity
+  onComplete?: () => void
+}
+
+export function ActivityViewer({ activity, onComplete }: ActivityViewerProps) {
     const [isCompleted, setIsCompleted] = useState(false)
+    
+    const currentWeek = getCurrentWeek()
+    const isCurrentWeekActivity = activity.weekNumber === currentWeek
+    const multiplierInfo = getDayMultiplierInfo()
+    const { points: calculatedPoints } = calculatePointsWithMultiplier(activity.points, new Date())
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Encabezado */}
             <header>
-                <h2 className="text-2xl font-bold">Módulo 1: Introducción a la materia</h2>
+                <h2 className="text-2xl font-bold">{activity.name}</h2>
                 <p className="text-muted-foreground mt-1">
-                    Aprende los conceptos fundamentales a través de este contenido interactivo.
+                    Semana {activity.weekNumber} - {activity.points} puntos base
                 </p>
             </header>
 
@@ -40,21 +52,27 @@ export function ActivityViewer() {
                                     Marca la actividad como completada para registrar tu progreso y ganar puntos.
                                 </p>
                             </div>
-                            <Button
-                                size="lg"
-                                className={isCompleted ? "bg-success hover:bg-success/90 text-success-foreground" : ""}
-                                onClick={() => setIsCompleted(true)}
-                                disabled={isCompleted}
-                            >
-                                {isCompleted ? (
-                                    <>
-                                        <CheckCircle2 className="mr-2 size-5" />
-                                        Completado
-                                    </>
-                                ) : (
-                                    "Marcar como Completado"
+                            <div className="w-full">
+                                <Button
+                                    size="lg"
+                                    className={isCompleted ? "bg-success hover:bg-success/90 text-success-foreground" : "w-full"}
+                                    onClick={() => { setIsCompleted(true); onComplete?.() }}
+                                    disabled={isCompleted}
+                                >
+                                    {isCompleted ? (
+                                        <>
+                                            <CheckCircle2 className="mr-2 size-5" />
+                                            Completado
+                                        </>
+                                    ) : (
+                                        'Marcar como Completado'
+                                    )}
+                                </Button>
+
+                                {!isCurrentWeekActivity && (
+                                    <p className="mt-2 text-sm text-muted-foreground">Nota: esta actividad pertenece a otra semana; se puede ver y marcar completada, pero no se otorgarán puntos.</p>
                                 )}
-                            </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -111,9 +129,9 @@ export function ActivityViewer() {
                                 <Zap className="size-5 text-orange-600 dark:text-orange-500" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-orange-700 dark:text-orange-400">Potencial de Recompensa</h4>
+                                <h4 className="font-bold text-orange-700 dark:text-orange-400">Recompensa</h4>
                                 <p className="text-sm text-orange-700/80 dark:text-orange-400/80 mt-1 leading-relaxed">
-                                    ¡Mantén tu racha! Completar esta actividad te otorgará un multiplicador <strong>x2</strong> en tus puntos.
+                                    Completar esta actividad te otorgará <strong>{calculatedPoints} puntos</strong> con multiplicador <strong>{multiplierInfo.label}</strong>
                                 </p>
                             </div>
                         </CardContent>

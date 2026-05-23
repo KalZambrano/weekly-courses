@@ -1,5 +1,7 @@
-//weekly-courses/app/(dashboard)/teacher/layout.tsx
-import { DashboardSidebar } from '@/components/custom/dashboard-sidebar'
+'use client';
+
+import { DashboardSidebar } from '@/components/custom/dashboard-sidebar';
+import RoleGuard from '@/components/auth/RoleGuard';
 
 export default function TeacherLayout({
   children,
@@ -7,11 +9,13 @@ export default function TeacherLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-screen">
-      <DashboardSidebar role="teacher" />
-      <main className="ml-64 flex-1 transition-all duration-300">
-        {children}
-      </main>
-    </div>
-  )
+    <RoleGuard allowedRoles={['teacher']}>
+      <div className="flex min-h-screen">
+        <DashboardSidebar role="teacher" />
+        <main className="ml-64 flex-1 transition-all duration-300">
+          {children}
+        </main>
+      </div>
+    </RoleGuard>
+  );
 }
