@@ -2,8 +2,17 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
+type UserRole = 'student' | 'teacher' | null;
+
+interface User {
+  email: string;
+  role: UserRole;
+  name: string;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
+  user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
@@ -22,13 +31,42 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Usuarios de prueba para demostración
+const MOCK_USERS = {
+  student: {
+    email: 'student@utp.edu.pe',
+    password: 'student123',
+    name: 'Juan Estudiante',
+    role: 'student' as UserRole,
+  },
+  teacher: {
+    email: 'teacher@utp.edu.pe',
+    password: 'teacher123',
+    name: 'María Profesora',
+    role: 'teacher' as UserRole,
+  },
+};
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     // Check if user is logged in on mount
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    setIsAuthenticated(loggedIn);
+    const savedUser = localStorage.getItem('user');
+    
+    if (loggedIn && savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setIsAuthenticated(true);
+        setUser(parsedUser);
+      } catch (error) {
+        // Si hay error al parsear, limpiar el localStorage
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('user');
+      }
+    }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -44,30 +82,47 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (response.ok) {
         const data = await response.json();
-        // Assume data contains token or user info
         localStorage.setItem('isLoggedIn', 'true');
-        // TODO: Store token in localStorage or secure storage
+        localStorage.setItem('user', JSON.stringify(data));
         setIsAuthenticated(true);
+        setUser(data);
         return true;
       } else {
         return false;
       }
     } catch (error) {
       console.error('Login error:', error);
-      // For now, mock successful login
-      localStorage.setItem('isLoggedIn', 'true');
-      setIsAuthenticated(true);
-      return true;
+      // Mock login with test users
+      const mockUser = Object.values(MOCK_USERS).find(
+        (u) => u.email === email && u.password === password
+      );
+
+      if (mockUser) {
+        const userData = {
+          email: mockUser.email,
+          role: mockUser.role,
+          name: mockUser.name,
+        };
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('user', JSON.stringify(userData));
+        setIsAuthenticated(true);
+        setUser(userData);
+        return true;
+      }
+
+      return false;
     }
   };
 
   const logout = () => {
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
     setIsAuthenticated(false);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

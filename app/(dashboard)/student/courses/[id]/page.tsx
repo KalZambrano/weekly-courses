@@ -10,11 +10,13 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ActivityItem } from '@/components/custom/activity-item'
 import { MiniRanking } from '@/components/custom/mini-ranking'
+import { WeekSelector } from '@/components/custom/week-selector'
 import { courses, allStudents, currentStudent } from '@/data/mock-data'
 import type { Activity, RankingStudent } from '@/data/mock-data'
 import { ArrowLeft, BookOpen, CheckCircle2, Clock, Trophy } from 'lucide-react'
 
 import { ActivityViewer } from '@/components/custom/activity-viewer'
+import { completeActivity } from '@/lib/gamification'
 import { QuizFeedback } from '@/components/custom/quiz-feedback'
 
 interface CourseDetailPageProps {
@@ -26,6 +28,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const course = courses.find(c => c.id === id)
 
   const [activeActivity, setActiveActivity] = useState<Activity | null>(null)
+  const [, setTick] = useState(0)
 
   if (!course) {
     notFound()
@@ -71,7 +74,15 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         {activeActivity.type === 'quiz' ? (
           <QuizFeedback />
         ) : (
-          <ActivityViewer />
+          <ActivityViewer
+            activity={activeActivity}
+            onComplete={() => {
+              // Complete activity, award points (if current week) and refresh UI
+              completeActivity(course.id, activeActivity.id)
+              setActiveActivity(null)
+              setTick(t => t + 1)
+            }}
+          />
         )}
       </div>
     )
@@ -94,6 +105,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             <p className="mt-2 text-lg text-muted-foreground">
               {course.description}
             </p>
+            <div className="mt-4">
+              <WeekSelector onWeekChange={(w) => console.log('Semana seleccionada', w)} />
+            </div>
           </div>
         </div>
 

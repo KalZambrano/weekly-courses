@@ -32,6 +32,7 @@ export interface Activity {
   status: 'pending' | 'completed' | 'in-progress'
   points: number
   duration: string
+  weekNumber: number
   completedAt?: string
 }
 
@@ -78,18 +79,18 @@ export const courses: Course[] = [
     totalActivities: 12,
     completedActivities: 9,
     activities: [
-      { id: 'a1', name: 'Ecuaciones lineales', type: 'video', status: 'completed', points: 50, duration: '15 min', completedAt: '2024-01-15' },
-      { id: 'a2', name: 'Quiz: Ecuaciones', type: 'quiz', status: 'completed', points: 100, duration: '10 min', completedAt: '2024-01-16' },
-      { id: 'a3', name: 'Sistemas de ecuaciones', type: 'exercise', status: 'completed', points: 75, duration: '20 min', completedAt: '2024-01-17' },
-      { id: 'a4', name: 'Funciones cuadráticas', type: 'video', status: 'completed', points: 50, duration: '18 min', completedAt: '2024-01-18' },
-      { id: 'a5', name: 'Práctica: Funciones', type: 'exercise', status: 'completed', points: 75, duration: '25 min', completedAt: '2024-01-19' },
-      { id: 'a6', name: 'Geometría básica', type: 'reading', status: 'completed', points: 30, duration: '12 min', completedAt: '2024-01-20' },
-      { id: 'a7', name: 'Áreas y perímetros', type: 'exercise', status: 'completed', points: 75, duration: '20 min', completedAt: '2024-01-21' },
-      { id: 'a8', name: 'Quiz: Geometría', type: 'quiz', status: 'completed', points: 100, duration: '15 min', completedAt: '2024-01-22' },
-      { id: 'a9', name: 'Trigonometría intro', type: 'video', status: 'completed', points: 50, duration: '20 min', completedAt: '2024-01-23' },
-      { id: 'a10', name: 'Funciones trigonométricas', type: 'exercise', status: 'in-progress', points: 75, duration: '25 min' },
-      { id: 'a11', name: 'Identidades trigonométricas', type: 'reading', status: 'pending', points: 30, duration: '15 min' },
-      { id: 'a12', name: 'Examen final', type: 'quiz', status: 'pending', points: 150, duration: '30 min' }
+      { id: 'a1', name: 'Ecuaciones lineales', type: 'video', status: 'completed', points: 50, duration: '15 min', weekNumber: 1, completedAt: '2024-01-15' },
+      { id: 'a2', name: 'Quiz: Ecuaciones', type: 'quiz', status: 'completed', points: 100, duration: '10 min', weekNumber: 1, completedAt: '2024-01-16' },
+      { id: 'a3', name: 'Sistemas de ecuaciones', type: 'exercise', status: 'completed', points: 75, duration: '20 min', weekNumber: 1, completedAt: '2024-01-17' },
+      { id: 'a4', name: 'Funciones cuadráticas', type: 'video', status: 'completed', points: 50, duration: '18 min', weekNumber: 2, completedAt: '2024-01-18' },
+      { id: 'a5', name: 'Práctica: Funciones', type: 'exercise', status: 'completed', points: 75, duration: '25 min', weekNumber: 2, completedAt: '2024-01-19' },
+      { id: 'a6', name: 'Geometría básica', type: 'reading', status: 'completed', points: 30, duration: '12 min', weekNumber: 2, completedAt: '2024-01-20' },
+      { id: 'a7', name: 'Áreas y perímetros', type: 'exercise', status: 'completed', points: 75, duration: '20 min', weekNumber: 3, completedAt: '2024-01-21' },
+      { id: 'a8', name: 'Quiz: Geometría', type: 'quiz', status: 'completed', points: 100, duration: '15 min', weekNumber: 3, completedAt: '2024-01-22' },
+      { id: 'a9', name: 'Trigonometría intro', type: 'video', status: 'completed', points: 50, duration: '20 min', weekNumber: 3, completedAt: '2024-01-23' },
+      { id: 'a10', name: 'Funciones trigonométricas', type: 'exercise', status: 'in-progress', points: 75, duration: '25 min', weekNumber: 4 },
+      { id: 'a11', name: 'Identidades trigonométricas', type: 'reading', status: 'pending', points: 30, duration: '15 min', weekNumber: 4 },
+      { id: 'a12', name: 'Examen final', type: 'quiz', status: 'pending', points: 150, duration: '30 min', weekNumber: 4 }
     ]
   },
   {
@@ -103,16 +104,16 @@ export const courses: Course[] = [
     totalActivities: 10,
     completedActivities: 5,
     activities: [
-      { id: 'b1', name: 'Introducción a la mecánica', type: 'video', status: 'completed', points: 50, duration: '20 min', completedAt: '2024-01-10' },
-      { id: 'b2', name: 'Leyes de Newton', type: 'reading', status: 'completed', points: 30, duration: '15 min', completedAt: '2024-01-11' },
-      { id: 'b3', name: 'Ejercicios: Fuerzas', type: 'exercise', status: 'completed', points: 75, duration: '25 min', completedAt: '2024-01-12' },
-      { id: 'b4', name: 'Quiz: Mecánica', type: 'quiz', status: 'completed', points: 100, duration: '15 min', completedAt: '2024-01-13' },
-      { id: 'b5', name: 'Energía y trabajo', type: 'video', status: 'completed', points: 50, duration: '18 min', completedAt: '2024-01-14' },
-      { id: 'b6', name: 'Conservación de energía', type: 'exercise', status: 'in-progress', points: 75, duration: '20 min' },
-      { id: 'b7', name: 'Termodinámica básica', type: 'reading', status: 'pending', points: 30, duration: '12 min' },
-      { id: 'b8', name: 'Calor y temperatura', type: 'video', status: 'pending', points: 50, duration: '15 min' },
-      { id: 'b9', name: 'Práctica: Termodinámica', type: 'exercise', status: 'pending', points: 75, duration: '25 min' },
-      { id: 'b10', name: 'Examen parcial', type: 'quiz', status: 'pending', points: 120, duration: '25 min' }
+      { id: 'b1', name: 'Introducción a la mecánica', type: 'video', status: 'completed', points: 50, duration: '20 min', weekNumber: 1, completedAt: '2024-01-10' },
+      { id: 'b2', name: 'Leyes de Newton', type: 'reading', status: 'completed', points: 30, duration: '15 min', weekNumber: 1, completedAt: '2024-01-11' },
+      { id: 'b3', name: 'Ejercicios: Fuerzas', type: 'exercise', status: 'completed', points: 75, duration: '25 min', weekNumber: 1, completedAt: '2024-01-12' },
+      { id: 'b4', name: 'Quiz: Mecánica', type: 'quiz', status: 'completed', points: 100, duration: '15 min', weekNumber: 2, completedAt: '2024-01-13' },
+      { id: 'b5', name: 'Energía y trabajo', type: 'video', status: 'completed', points: 50, duration: '18 min', weekNumber: 2, completedAt: '2024-01-14' },
+      { id: 'b6', name: 'Conservación de energía', type: 'exercise', status: 'in-progress', points: 75, duration: '20 min', weekNumber: 2 },
+      { id: 'b7', name: 'Termodinámica básica', type: 'reading', status: 'pending', points: 30, duration: '12 min', weekNumber: 3 },
+      { id: 'b8', name: 'Calor y temperatura', type: 'video', status: 'pending', points: 50, duration: '15 min', weekNumber: 3 },
+      { id: 'b9', name: 'Práctica: Termodinámica', type: 'exercise', status: 'pending', points: 75, duration: '25 min', weekNumber: 3 },
+      { id: 'b10', name: 'Examen parcial', type: 'quiz', status: 'pending', points: 120, duration: '25 min', weekNumber: 4 }
     ]
   },
   {
@@ -126,14 +127,14 @@ export const courses: Course[] = [
     totalActivities: 8,
     completedActivities: 2,
     activities: [
-      { id: 'c1', name: 'Introducción a la química orgánica', type: 'video', status: 'completed', points: 50, duration: '22 min', completedAt: '2024-01-08' },
-      { id: 'c2', name: 'Hidrocarburos', type: 'reading', status: 'completed', points: 30, duration: '18 min', completedAt: '2024-01-09' },
-      { id: 'c3', name: 'Alcanos y alquenos', type: 'exercise', status: 'in-progress', points: 75, duration: '20 min' },
-      { id: 'c4', name: 'Quiz: Hidrocarburos', type: 'quiz', status: 'pending', points: 100, duration: '15 min' },
-      { id: 'c5', name: 'Grupos funcionales', type: 'video', status: 'pending', points: 50, duration: '20 min' },
-      { id: 'c6', name: 'Alcoholes y éteres', type: 'reading', status: 'pending', points: 30, duration: '15 min' },
-      { id: 'c7', name: 'Práctica: Nomenclatura', type: 'exercise', status: 'pending', points: 75, duration: '25 min' },
-      { id: 'c8', name: 'Examen: Química orgánica', type: 'quiz', status: 'pending', points: 130, duration: '30 min' }
+      { id: 'c1', name: 'Introducción a la química orgánica', type: 'video', status: 'completed', points: 50, duration: '22 min', weekNumber: 1, completedAt: '2024-01-08' },
+      { id: 'c2', name: 'Hidrocarburos', type: 'reading', status: 'completed', points: 30, duration: '18 min', weekNumber: 1, completedAt: '2024-01-09' },
+      { id: 'c3', name: 'Alcanos y alquenos', type: 'exercise', status: 'in-progress', points: 75, duration: '20 min', weekNumber: 2 },
+      { id: 'c4', name: 'Quiz: Hidrocarburos', type: 'quiz', status: 'pending', points: 100, duration: '15 min', weekNumber: 2 },
+      { id: 'c5', name: 'Grupos funcionales', type: 'video', status: 'pending', points: 50, duration: '20 min', weekNumber: 3 },
+      { id: 'c6', name: 'Alcoholes y éteres', type: 'reading', status: 'pending', points: 30, duration: '15 min', weekNumber: 3 },
+      { id: 'c7', name: 'Práctica: Nomenclatura', type: 'exercise', status: 'pending', points: 75, duration: '25 min', weekNumber: 4 },
+      { id: 'c8', name: 'Examen: Química orgánica', type: 'quiz', status: 'pending', points: 130, duration: '30 min', weekNumber: 4 }
     ]
   },
   {
@@ -147,16 +148,16 @@ export const courses: Course[] = [
     totalActivities: 10,
     completedActivities: 9,
     activities: [
-      { id: 'd1', name: 'Introducción a la programación', type: 'video', status: 'completed', points: 50, duration: '15 min', completedAt: '2024-01-01' },
-      { id: 'd2', name: 'Variables y tipos de datos', type: 'reading', status: 'completed', points: 30, duration: '10 min', completedAt: '2024-01-02' },
-      { id: 'd3', name: 'Ejercicio: Variables', type: 'exercise', status: 'completed', points: 75, duration: '20 min', completedAt: '2024-01-03' },
-      { id: 'd4', name: 'Estructuras de control', type: 'video', status: 'completed', points: 50, duration: '18 min', completedAt: '2024-01-04' },
-      { id: 'd5', name: 'Quiz: Condicionales', type: 'quiz', status: 'completed', points: 100, duration: '12 min', completedAt: '2024-01-05' },
-      { id: 'd6', name: 'Bucles y ciclos', type: 'video', status: 'completed', points: 50, duration: '20 min', completedAt: '2024-01-06' },
-      { id: 'd7', name: 'Práctica: Bucles', type: 'exercise', status: 'completed', points: 75, duration: '25 min', completedAt: '2024-01-07' },
-      { id: 'd8', name: 'Funciones', type: 'reading', status: 'completed', points: 30, duration: '15 min', completedAt: '2024-01-08' },
-      { id: 'd9', name: 'Quiz: Funciones', type: 'quiz', status: 'completed', points: 100, duration: '15 min', completedAt: '2024-01-09' },
-      { id: 'd10', name: 'Proyecto final', type: 'exercise', status: 'in-progress', points: 200, duration: '60 min' }
+      { id: 'd1', name: 'Introducción a la programación', type: 'video', status: 'completed', points: 50, duration: '15 min', weekNumber: 1, completedAt: '2024-01-01' },
+      { id: 'd2', name: 'Variables y tipos de datos', type: 'reading', status: 'completed', points: 30, duration: '10 min', weekNumber: 1, completedAt: '2024-01-02' },
+      { id: 'd3', name: 'Ejercicio: Variables', type: 'exercise', status: 'completed', points: 75, duration: '20 min', weekNumber: 1, completedAt: '2024-01-03' },
+      { id: 'd4', name: 'Estructuras de control', type: 'video', status: 'completed', points: 50, duration: '18 min', weekNumber: 2, completedAt: '2024-01-04' },
+      { id: 'd5', name: 'Quiz: Condicionales', type: 'quiz', status: 'completed', points: 100, duration: '12 min', weekNumber: 2, completedAt: '2024-01-05' },
+      { id: 'd6', name: 'Bucles y ciclos', type: 'video', status: 'completed', points: 50, duration: '20 min', weekNumber: 2, completedAt: '2024-01-06' },
+      { id: 'd7', name: 'Práctica: Bucles', type: 'exercise', status: 'completed', points: 75, duration: '25 min', weekNumber: 3, completedAt: '2024-01-07' },
+      { id: 'd8', name: 'Funciones', type: 'reading', status: 'completed', points: 30, duration: '15 min', weekNumber: 3, completedAt: '2024-01-08' },
+      { id: 'd9', name: 'Quiz: Funciones', type: 'quiz', status: 'completed', points: 100, duration: '15 min', weekNumber: 3, completedAt: '2024-01-09' },
+      { id: 'd10', name: 'Proyecto final', type: 'exercise', status: 'in-progress', points: 200, duration: '60 min', weekNumber: 4 }
     ]
   }
 ]
