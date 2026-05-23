@@ -1,10 +1,10 @@
-//weekly-courses/app/(dashboard)/student/courses/page.tsx
 'use client'
 
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { CourseCard } from '@/components/custom/course-card'
+import { PointsSystemInfo } from '@/components/custom/points-system-info'
 import { courses, currentStudent } from '@/data/mock-data'
 import { Search, BookOpen, Filter } from 'lucide-react'
 import {
@@ -50,6 +50,11 @@ export default function CoursesPage() {
         <p className="mt-2 text-muted-foreground">
           Explora y continúa tu aprendizaje
         </p>
+      </div>
+      
+      {/* Points System Info */}
+      <div className="mb-8">
+        <PointsSystemInfo />
       </div>
       
       {/* Stats */}

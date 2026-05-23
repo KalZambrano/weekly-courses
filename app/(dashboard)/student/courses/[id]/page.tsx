@@ -10,13 +10,13 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ActivityItem } from '@/components/custom/activity-item'
 import { MiniRanking } from '@/components/custom/mini-ranking'
-import { WeekSelector } from '@/components/custom/week-selector'
+import { WeeklyActivities } from '@/components/custom/weekly-activities'
 import { courses, allStudents, currentStudent } from '@/data/mock-data'
 import type { Activity, RankingStudent } from '@/data/mock-data'
 import { ArrowLeft, BookOpen, CheckCircle2, Clock, Trophy } from 'lucide-react'
 
 import { ActivityViewer } from '@/components/custom/activity-viewer'
-import { completeActivity } from '@/lib/gamification'
+import { completeActivity, getCurrentWeek } from '@/lib/gamification'
 import { QuizFeedback } from '@/components/custom/quiz-feedback'
 
 interface CourseDetailPageProps {
@@ -58,6 +58,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     const minutes = parseInt(a.duration)
     return sum + (isNaN(minutes) ? 0 : minutes)
   }, 0)
+
+  const currentWeek = getCurrentWeek()
 
   if (activeActivity) {
     return (
@@ -105,8 +107,15 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             <p className="mt-2 text-lg text-muted-foreground">
               {course.description}
             </p>
-            <div className="mt-4">
-              <WeekSelector onWeekChange={(w) => console.log('Semana seleccionada', w)} />
+            <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
+              <span>👨‍🏫 {course.teacher}</span>
+              <span>|</span>
+              <span>📚 Sección {course.section}</span>
+              <span>|</span>
+              <span className="flex items-center gap-1">
+                <span className={`size-2 rounded-full ${currentWeek === getCurrentWeek() ? 'bg-orange-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                Semana actual: {currentWeek}
+              </span>
             </div>
           </div>
         </div>
@@ -129,43 +138,15 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
       <Tabs defaultValue="temario" className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="temario">Temario del Curso</TabsTrigger>
+          <TabsTrigger value="temario">Temario por Semana</TabsTrigger>
           <TabsTrigger value="ranking">Ranking Local</TabsTrigger>
         </TabsList>
 
         <TabsContent value="temario" className="space-y-8">
-          {inProgressActivities.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><span className="size-3 rounded-full bg-primary animate-pulse" />En Progreso</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {inProgressActivities.map((activity) => (
-                  <ActivityItem key={activity.id} activity={activity} onStart={() => setActiveActivity(activity)} />
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {pendingActivities.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><span className="size-3 rounded-full bg-muted-foreground/30" />Pendientes ({pendingActivities.length})</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {pendingActivities.map((activity) => (
-                  <ActivityItem key={activity.id} activity={activity} onStart={() => setActiveActivity(activity)} />
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {completedActivities.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><CheckCircle2 className="size-5 text-success" />Completadas ({completedActivities.length})</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {completedActivities.map((activity) => (
-                  <ActivityItem key={activity.id} activity={activity} />
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          <WeeklyActivities 
+            activities={course.activities}
+            onActivityStart={(activity) => setActiveActivity(activity)}
+          />
         </TabsContent>
 
         <TabsContent value="ranking">
@@ -212,7 +193,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   </div>
 
                   <div className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">
-                    ¡Sigue completando actividades para subir en la tabla de posiciones!
+                    ¡Completa actividades en la semana activa (lunes-jueves) para ganar x1.5 puntos!
                   </div>
                 </CardContent>
               </Card>

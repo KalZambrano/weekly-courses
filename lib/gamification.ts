@@ -7,13 +7,19 @@ export interface MultiplierInfo {
   description: string
 }
 
-// Get multiplier based on day of week (Monday-Thursday: x1.5, Friday-Sunday: x1)
+// Get day multiplier based on day of week (Monday-Thursday: x1.5, Friday-Sunday: x1)
 export const getDayMultiplier = (): number => {
   const day = new Date().getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   // Monday (1) to Thursday (4): x1.5
   if (day >= 1 && day <= 4) return 1.5
   // Friday (5), Saturday (6), Sunday (0): x1
   return 1
+}
+
+// Get day name for display
+export const getDayName = (): string => {
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+  return days[new Date().getDay()]
 }
 
 // Get multiplier based on streak day

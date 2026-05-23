@@ -2,9 +2,9 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { getActivityTypeInfo, getCurrentWeek, getDayMultiplierInfo, calculatePointsWithMultiplier } from '@/lib/gamification'
+import { getActivityTypeInfo, getCurrentWeek, getDayMultiplierInfo, calculatePointsWithMultiplier, getDayName } from '@/lib/gamification'
 import type { Activity } from '@/data/mock-data'
-import { CheckCircle2, Circle, PlayCircle, Clock, Zap } from 'lucide-react'
+import { CheckCircle2, Circle, PlayCircle, Clock, Zap, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ActivityItemProps {
@@ -37,8 +37,11 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
   
   const currentWeek = getCurrentWeek()
   const isCurrentWeekActivity = activity.weekNumber === currentWeek
+  const isPastWeek = activity.weekNumber < currentWeek
   const multiplierInfo = getDayMultiplierInfo()
   const { points: calculatedPoints } = calculatePointsWithMultiplier(activity.points, new Date())
+  const dayName = getDayName()
+  const isWeekdayBonus = [1, 2, 3, 4].includes(new Date().getDay()) // Monday-Thursday
   
   return (
     <div 
@@ -47,7 +50,7 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
         activity.status === 'completed' && "bg-success/5 border-success/20",
         activity.status === 'in-progress' && "bg-primary/5 border-primary/20 ring-2 ring-primary/10",
         activity.status === 'pending' && "hover:bg-muted/50",
-        !isCurrentWeekActivity && activity.status === 'pending' && "opacity-60"
+        isPastWeek && activity.status === 'pending' && "opacity-75 bg-red-50/30 border-red-200/50"
       )}
     >
       {/* Status Icon */}
@@ -66,17 +69,28 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
         )}>
           {activity.name}
         </p>
-        <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+        <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
           <span className="flex items-center gap-1">
             <Clock className="size-3" />
             {activity.duration}
           </span>
           <span>|</span>
           <span className="text-xs">Semana {activity.weekNumber}</span>
-          {!isCurrentWeekActivity && activity.status === 'pending' && (
+          {isCurrentWeekActivity && !activity.completedAt && (
             <>
               <span>|</span>
-              <span className="text-xs text-orange-600">Fuera de semana actual</span>
+              <span className="text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-semibold">
+                Semana actual {isWeekdayBonus ? '(x1.5 hoy)' : '(x1 hoy)'}
+              </span>
+            </>
+          )}
+          {isPastWeek && activity.status === 'pending' && (
+            <>
+              <span>|</span>
+              <span className="text-xs flex items-center gap-1 text-red-600 font-semibold">
+                <AlertCircle className="size-3" />
+                Pasada - Sin puntos
+              </span>
             </>
           )}
         </div>
@@ -87,7 +101,7 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
         {activity.status === 'pending' && isCurrentWeekActivity && (
           <div className="flex items-center gap-1 text-sm">
             <Zap className="size-3 text-orange-500" />
-            <span className="font-medium text-primary">
+            <span className="font-bold text-primary">
               +{calculatedPoints} pts
             </span>
             <span className="text-xs text-orange-600 font-semibold">
@@ -97,11 +111,11 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
         )}
         {activity.status === 'pending' && !isCurrentWeekActivity && (
           <div className="flex items-center gap-1 text-sm">
-            <span className="font-medium text-muted-foreground">
+            <span className="font-medium text-muted-foreground line-through">
               +{activity.points} pts
             </span>
-            <span className="text-xs text-muted-foreground">
-              (Sin puntos)
+            <span className="text-xs text-red-600 font-semibold">
+              0 pts
             </span>
           </div>
         )}
@@ -119,9 +133,14 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
       </div>
       
       {/* Action */}
-      {activity.status === 'pending' && (
+      {activity.status === 'pending' && !isPastWeek && (
         <Button size="sm" onClick={onStart}>
           Iniciar
+        </Button>
+      )}
+      {activity.status === 'pending' && isPastWeek && (
+        <Button size="sm" disabled variant="secondary">
+          Vencido
         </Button>
       )}
       {activity.status === 'in-progress' && (
