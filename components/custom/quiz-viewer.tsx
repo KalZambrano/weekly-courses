@@ -24,7 +24,10 @@ export function QuizViewer({ activity, onComplete }: QuizViewerProps) {
   const [quizCompleted, setQuizCompleted] = useState(false)
   
   const quiz = activity.quiz
-  if (!quiz) return null
+  
+  if (!quiz) {
+    return <div className="p-8 text-center text-muted-foreground">Error: No quiz data found for this activity</div>
+  }
 
   const questions = quiz.questions
   const currentQ = questions[currentQuestion]
