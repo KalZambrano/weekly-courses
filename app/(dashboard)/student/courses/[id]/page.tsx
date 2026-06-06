@@ -16,8 +16,10 @@ import type { Activity, RankingStudent } from '@/data/mock-data'
 import { ArrowLeft, BookOpen, CheckCircle2, Clock, Trophy } from 'lucide-react'
 
 import { ActivityViewer } from '@/components/custom/activity-viewer'
+import { QuizViewer } from '@/components/custom/quiz-viewer'
 import { completeActivity, getCurrentWeek } from '@/lib/gamification'
 import { QuizFeedback } from '@/components/custom/quiz-feedback'
+import type { QuizAttempt } from '@/data/mock-data'
 
 interface CourseDetailPageProps {
   params: Promise<{ id: string }>
@@ -74,12 +76,28 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </Button>
 
         {activeActivity.type === 'quiz' ? (
-          <QuizFeedback />
+          <QuizViewer
+            activity={activeActivity}
+            onComplete={(attemptData: QuizAttempt) => {
+              // Mark quiz as approved if passing score
+              if (attemptData.score >= (activeActivity.quiz?.passingScore || 12)) {
+                activeActivity.isApproved = true
+                activeActivity.status = 'completed'
+                activeActivity.bestAttemptScore = attemptData.score
+                completeActivity(course.id, activeActivity.id)
+              }
+              // Store the attempt
+              if (!activeActivity.attempts) {
+                activeActivity.attempts = []
+              }
+              activeActivity.attempts.push(attemptData)
+              setTick(t => t + 1)
+            }}
+          />
         ) : (
           <ActivityViewer
             activity={activeActivity}
             onComplete={() => {
-              // Complete activity, award points (if current week) and refresh UI
               completeActivity(course.id, activeActivity.id)
               setActiveActivity(null)
               setTick(t => t + 1)

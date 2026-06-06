@@ -25,6 +25,23 @@ export interface Course {
   activities: Activity[]
 }
 
+export interface QuizQuestion {
+  id: string
+  question: string
+  options: string[]
+  correctAnswer: number
+  explanation: string
+  topic: string
+}
+
+export interface QuizAttempt {
+  attemptNumber: number
+  score: number
+  answers: number[]
+  completedAt: string
+  pointsEarned: number
+}
+
 export interface Activity {
   id: string
   name: string
@@ -35,7 +52,16 @@ export interface Activity {
   weekNumber: number
   completedAt?: string
   description?: string
-  pointsAwarded?: number // Points actually awarded (considers multipliers)
+  pointsAwarded?: number
+  // Quiz specific
+  quiz?: {
+    questions: QuizQuestion[]
+    maxAttempts: number
+    passingScore: 12
+  }
+  attempts?: QuizAttempt[]
+  bestAttemptScore?: number
+  isApproved?: boolean
 }
 
 export interface RecentActivity {
@@ -85,7 +111,66 @@ export const courses: Course[] = [
       { id: 'a1', name: 'Introducción a ecuaciones lineales', type: 'video', status: 'completed', points: 50, duration: '15 min', weekNumber: 1, completedAt: '2026-03-24', description: 'Aprende los fundamentos de ecuaciones lineales' },
       { id: 'a2', name: 'Lectura: Conceptos básicos', type: 'reading', status: 'completed', points: 30, duration: '12 min', weekNumber: 1, completedAt: '2026-03-25', description: 'Material introductorio sobre álgebra' },
       { id: 'a3', name: 'Ejercicios: Ecuaciones básicas', type: 'exercise', status: 'completed', points: 75, duration: '20 min', weekNumber: 1, completedAt: '2026-03-26', description: 'Resuelve 10 ecuaciones lineales simples' },
-      { id: 'a4', name: 'Quiz: Ecuaciones lineales', type: 'quiz', status: 'completed', points: 100, duration: '15 min', weekNumber: 1, completedAt: '2026-03-27', description: 'Evaluación de conceptos de la semana 1' },
+      { 
+        id: 'a4', 
+        name: 'Quiz: Ecuaciones lineales', 
+        type: 'quiz', 
+        status: 'completed', 
+        points: 100, 
+        duration: '15 min', 
+        weekNumber: 1, 
+        completedAt: '2026-03-27', 
+        description: 'Evaluación de conceptos de la semana 1',
+        isApproved: true,
+        bestAttemptScore: 18,
+        quiz: {
+          questions: [
+            {
+              id: 'q1',
+              question: '¿Cuál es la solución de la ecuación 2x + 3 = 11?',
+              options: ['x = 2', 'x = 4', 'x = 5', 'x = 3'],
+              correctAnswer: 1,
+              explanation: '2x + 3 = 11 → 2x = 8 → x = 4',
+              topic: 'Ecuaciones básicas'
+            },
+            {
+              id: 'q2',
+              question: 'Resuelve: 3x - 5 = 10',
+              options: ['x = 3', 'x = 5', 'x = 15/3', 'x = 2'],
+              correctAnswer: 1,
+              explanation: '3x - 5 = 10 → 3x = 15 → x = 5',
+              topic: 'Ecuaciones básicas'
+            },
+            {
+              id: 'q3',
+              question: '¿Cuál es la pendiente de y = 2x + 5?',
+              options: ['m = 5', 'm = 2', 'm = 7', 'm = -2'],
+              correctAnswer: 1,
+              explanation: 'En la forma y = mx + b, m es la pendiente. Aquí m = 2',
+              topic: 'Funciones lineales'
+            },
+            {
+              id: 'q4',
+              question: 'Resuelve el sistema: x + y = 5, x - y = 1',
+              options: ['x = 3, y = 2', 'x = 2, y = 3', 'x = 4, y = 1', 'x = 1, y = 4'],
+              correctAnswer: 0,
+              explanation: 'Sumando: 2x = 6 → x = 3. Entonces: y = 5 - 3 = 2',
+              topic: 'Sistemas de ecuaciones'
+            }
+          ],
+          maxAttempts: 3,
+          passingScore: 12
+        },
+        attempts: [
+          {
+            attemptNumber: 1,
+            score: 18,
+            answers: [1, 1, 1, 0],
+            completedAt: '2026-03-27T10:30:00Z',
+            pointsEarned: 100
+          }
+        ]
+      },
       { id: 'a5', name: 'Sistemas de ecuaciones 2x2', type: 'video', status: 'completed', points: 50, duration: '18 min', weekNumber: 1, completedAt: '2026-03-28', description: 'Métodos de sustitución y eliminación' },
       { id: 'a6', name: 'Práctica: Sistemas de ecuaciones', type: 'exercise', status: 'completed', points: 75, duration: '25 min', weekNumber: 1, completedAt: '2026-03-29', description: 'Resuelve sistemas 2x2 usando dos métodos' },
       
@@ -93,7 +178,57 @@ export const courses: Course[] = [
       { id: 'a7', name: 'Funciones cuadráticas - Parte 1', type: 'video', status: 'in-progress', points: 50, duration: '18 min', weekNumber: 2, description: 'Análisis de parábolas y vértices' },
       { id: 'a8', name: 'Lectura: Propiedades de funciones', type: 'reading', status: 'pending', points: 30, duration: '15 min', weekNumber: 2, description: 'Conceptos sobre dominio, rango y transformaciones' },
       { id: 'a9', name: 'Ejercicios: Gráficas de parábolas', type: 'exercise', status: 'pending', points: 75, duration: '25 min', weekNumber: 2, description: 'Grafica y analiza funciones cuadráticas' },
-      { id: 'a10', name: 'Quiz: Funciones cuadráticas', type: 'quiz', status: 'pending', points: 100, duration: '15 min', weekNumber: 2, description: 'Evaluación de funciones cuadráticas' },
+      { 
+        id: 'a10', 
+        name: 'Quiz: Funciones cuadráticas', 
+        type: 'quiz', 
+        status: 'pending', 
+        points: 100, 
+        duration: '15 min', 
+        weekNumber: 2, 
+        description: 'Evaluación de funciones cuadráticas',
+        isApproved: false,
+        bestAttemptScore: 0,
+        quiz: {
+          questions: [
+            {
+              id: 'q1',
+              question: '¿Cuál es el vértice de f(x) = (x-2)² + 3?',
+              options: ['(2, 3)', '(-2, -3)', '(2, -3)', '(-2, 3)'],
+              correctAnswer: 0,
+              explanation: 'En forma vértice f(x) = (x-h)² + k, el vértice es (h, k) = (2, 3)',
+              topic: 'Forma vértice'
+            },
+            {
+              id: 'q2',
+              question: 'Encuentra las raíces de x² - 5x + 6 = 0',
+              options: ['x = 2, x = 3', 'x = 1, x = 6', 'x = 2, x = -3', 'x = -2, x = -3'],
+              correctAnswer: 0,
+              explanation: '(x-2)(x-3) = 0 → x = 2 o x = 3',
+              topic: 'Raíces de funciones'
+            },
+            {
+              id: 'q3',
+              question: '¿Hacia dónde abre la parábola f(x) = -2x² + 5?',
+              options: ['Hacia arriba', 'Hacia abajo', 'Horizontal', 'No es una parábola'],
+              correctAnswer: 1,
+              explanation: 'El coeficiente de x² es negativo (-2), por lo que abre hacia abajo',
+              topic: 'Características de parábolas'
+            },
+            {
+              id: 'q4',
+              question: 'El eje de simetría de f(x) = x² - 4x + 1 es:',
+              options: ['x = 2', 'x = -2', 'x = 4', 'x = -4'],
+              correctAnswer: 0,
+              explanation: 'El eje de simetría es x = -b/2a = -(-4)/(2·1) = 2',
+              topic: 'Eje de simetría'
+            }
+          ],
+          maxAttempts: 3,
+          passingScore: 12
+        },
+        attempts: []
+      },
       { id: 'a11', name: 'Aplicaciones de funciones cuadráticas', type: 'video', status: 'pending', points: 50, duration: '20 min', weekNumber: 2, description: 'Problemas de optimización' },
       { id: 'a12', name: 'Proyecto: Modelado de trayectorias', type: 'exercise', status: 'pending', points: 100, duration: '40 min', weekNumber: 2, description: 'Crea modelos cuadráticos de fenómenos reales' },
       

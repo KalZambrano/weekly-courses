@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ActivityItem } from '@/components/custom/activity-item'
+import { ActivityCard } from '@/components/custom/activity-card'
 import type { Activity } from '@/data/mock-data'
 import { getCurrentWeek, getWeekDates } from '@/lib/gamification'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
@@ -143,71 +144,14 @@ export function WeeklyActivities({ activities, onActivityStart }: WeeklyActiviti
 
       {/* Activities for selected week */}
       {selectedWeekActivities.length > 0 ? (
-        <div className="space-y-4">
-          {/* In Progress Activities */}
-          {selectedWeekActivities.filter(a => a.status === 'in-progress').length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <span className="size-3 rounded-full bg-orange-500 animate-pulse" />
-                  En Progreso
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {selectedWeekActivities
-                  .filter(a => a.status === 'in-progress')
-                  .map((activity) => (
-                    <ActivityItem
-                      key={activity.id}
-                      activity={activity}
-                      onStart={() => onActivityStart(activity)}
-                    />
-                  ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Completed Activities */}
-          {selectedWeekActivities.filter(a => a.status === 'completed').length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <span className="size-3 rounded-full bg-success" />
-                  Completadas ({selectedWeekActivities.filter(a => a.status === 'completed').length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {selectedWeekActivities
-                  .filter(a => a.status === 'completed')
-                  .map((activity) => (
-                    <ActivityItem key={activity.id} activity={activity} />
-                  ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Pending Activities */}
-          {selectedWeekActivities.filter(a => a.status === 'pending').length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <span className="size-3 rounded-full bg-muted-foreground/30" />
-                  Pendientes ({selectedWeekActivities.filter(a => a.status === 'pending').length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {selectedWeekActivities
-                  .filter(a => a.status === 'pending')
-                  .map((activity) => (
-                    <ActivityItem
-                      key={activity.id}
-                      activity={activity}
-                      onStart={() => onActivityStart(activity)}
-                    />
-                  ))}
-              </CardContent>
-            </Card>
-          )}
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {selectedWeekActivities.map((activity) => (
+            <ActivityCard
+              key={activity.id}
+              activity={activity}
+              onStart={() => onActivityStart(activity)}
+            />
+          ))}
         </div>
       ) : (
         <Card>
