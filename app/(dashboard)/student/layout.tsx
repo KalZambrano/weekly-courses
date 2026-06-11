@@ -9,7 +9,7 @@ export default function StudentLayout({
   children: React.ReactNode
 }) {
   return (
-    <RoleGuard allowedRoles={['student']}>
+    <RoleGuard allowedRoles={['student', 'teacher']}>
       <div className="flex min-h-screen">
         <DashboardSidebar role="student" />
         <main className="ml-64 flex-1 transition-all duration-300">

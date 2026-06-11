@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { LevelBadge } from './level-badge'
 import type { RankingStudent } from '@/data/mock-data'
-import { Trophy, ArrowRight } from 'lucide-react'
+import { Trophy, ArrowRight, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface MiniRankingProps {
@@ -14,6 +14,8 @@ interface MiniRankingProps {
   limit?: number
   title?: string       
   showFooter?: boolean 
+  showInviteButton?: boolean
+  onInvite?: (student: RankingStudent) => void // <-- NUEVO: Le avisa a la página que se hizo clic
 }
 
 export function MiniRanking({
@@ -21,7 +23,9 @@ export function MiniRanking({
   currentUserId,
   limit = 5,
   title = "Ranking Global", 
-  showFooter = true         
+  showFooter = true,
+  showInviteButton = false,
+  onInvite
 }: MiniRankingProps) {
   const displayedRanking = ranking.slice(0, limit)
 
@@ -39,53 +43,38 @@ export function MiniRanking({
           const isTopThree = student.position <= 3
 
           return (
-            <div
-              key={student.id}
-              className={cn(
-                "flex items-center gap-3 rounded-lg p-3 transition-colors",
-                isCurrentUser
-                  ? "bg-primary/10 ring-2 ring-primary/20"
-                  : "hover:bg-muted/50"
-              )}
-            >
-              <div
-                className={cn(
-                  "flex size-8 items-center justify-center rounded-full text-sm font-bold",
-                  student.position === 1 && "bg-gold text-gold-foreground",
-                  student.position === 2 && "bg-silver text-silver-foreground",
-                  student.position === 3 && "bg-bronze text-bronze-foreground",
-                  !isTopThree && "bg-muted text-muted-foreground"
-                )}
-              >
+            <div key={student.id} className={cn("flex items-center gap-3 rounded-lg p-3 transition-colors", isCurrentUser ? "bg-primary/10 ring-2 ring-primary/20" : "hover:bg-muted/50")}>
+              <div className={cn("flex size-8 items-center justify-center rounded-full text-sm font-bold", student.position === 1 && "bg-gold text-gold-foreground", student.position === 2 && "bg-silver text-silver-foreground", student.position === 3 && "bg-bronze text-bronze-foreground", !isTopThree && "bg-muted text-muted-foreground")}>
                 {student.position}
               </div>
-
               <Avatar className="size-9">
-                <AvatarFallback className={cn(
-                  isCurrentUser ? "bg-primary text-primary-foreground" : "bg-secondary"
-                )}>
+                <AvatarFallback className={cn(isCurrentUser ? "bg-primary text-primary-foreground" : "bg-secondary")}>
                   {student.avatar}
                 </AvatarFallback>
               </Avatar>
-
               <div className="flex-1 min-w-0">
-                <p className={cn(
-                  "font-medium truncate",
-                  isCurrentUser && "text-primary"
-                )}>
-                  {student.name}
-                  {isCurrentUser && <span className="ml-1 text-xs">(Tú)</span>}
+                <p className={cn("font-medium truncate", isCurrentUser && "text-primary")}>
+                  {student.name} {isCurrentUser && <span className="ml-1 text-xs">(Tú)</span>}
                 </p>
                 <LevelBadge level={student.level} size="sm" />
               </div>
-
-              <p className="font-bold text-primary">{student.points.toLocaleString('es-ES')}</p>
+              <div className="flex items-center gap-3">
+                <p className="font-bold text-primary">{student.points.toLocaleString('es-ES')}</p>
+                {showInviteButton && !isCurrentUser && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer" 
+                    onClick={() => onInvite?.(student)}
+                  >
+                    <Mail className="size-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           )
         })}
       </CardContent>
-
-      {/* Renderizado condicional del footer */}
       {showFooter && (
         <CardFooter className="border-t pt-4">
           <Link href="/student/ranking" className="w-full">
