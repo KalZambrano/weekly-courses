@@ -1,3 +1,4 @@
+//WEEKLY-COURSES/components/auth/Login.tsx
 "use client";
 
 import { useState } from "react";
@@ -19,7 +20,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState("");
+
+  // CAMBIO 1: Cambiamos el estado 'email' por 'dni' para mayor claridad
+  const [dni, setDni] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,24 +32,29 @@ export default function Login() {
     setLoading(true);
     setError("");
 
-    const success = await login(email, password);
+    const success = await login(dni, password);
+
     if (success) {
-      // Redirigir según el email
-      if (email.includes('student')) {
-        router.push('/student');
-      } else if (email.includes('teacher')) {
-        router.push('/teacher');
+      // CAMBIO 2: Leemos el rol real que nos devolvió el backend (guardado en localStorage por AuthContext)
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        if (parsedUser.role === 'teacher') {
+          router.push('/teacher');
+        } else {
+          router.push('/student');
+        }
       } else {
         router.push('/student');
       }
     } else {
-      setError("Credenciales inválidas");
+      setError("Credenciales inválidas o error de conexión");
     }
     setLoading(false);
   };
 
-  const fillCredentials = (userEmail: string, userPassword: string) => {
-    setEmail(userEmail);
+  const fillCredentials = (userDni: string, userPassword: string) => {
+    setDni(userDni);
     setPassword(userPassword);
   };
 
@@ -75,16 +83,16 @@ export default function Login() {
         <CardContent className="pt-4">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 font-medium">
-                Correo Electrónico
+              <Label htmlFor="dni" className="text-slate-700 font-medium">
+                DNI o Correo Electrónico
               </Label>
 
               <Input
-                id="email"
-                type="email"
-                placeholder="correo@institucion.edu.pe"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="dni"
+                type="text" // CAMBIO 3: 'text' en lugar de 'email' para que acepte el DNI sin arroba
+                placeholder="Ingresa tu DNI"
+                value={dni}
+                onChange={(e) => setDni(e.target.value)}
                 required
                 className="h-11 rounded-xl border-slate-300 focus-visible:ring-2 focus-visible:ring-blue-200"
               />
@@ -139,7 +147,7 @@ export default function Login() {
               <p className="text-sm text-slate-600 font-medium mb-3 text-center">
                 Usuarios de prueba
               </p>
-              
+
               <div className="space-y-2">
                 <Button
                   type="button"
@@ -149,7 +157,7 @@ export default function Login() {
                 >
                   <User className="h-4 w-4 mr-2 text-blue-600" />
                   <div className="flex-1">
-                    <div className="text-sm font-medium">Estudiante</div>
+                    <div className="text-sm font-medium">Estudiante (Mock)</div>
                     <div className="text-xs text-slate-500">student@utp.edu.pe</div>
                   </div>
                 </Button>
@@ -158,12 +166,12 @@ export default function Login() {
                   type="button"
                   variant="outline"
                   className="w-full h-10 rounded-xl border-slate-300 hover:bg-green-50 hover:border-green-300 text-slate-700 hover:text-green-700 transition-all cursor-pointer text-left justify-start"
-                  onClick={() => fillCredentials('teacher@utp.edu.pe', 'teacher123')}
+                  onClick={() => fillCredentials('12345678', 'admin123')} // CAMBIO 4: Credenciales reales del backend
                 >
                   <User className="h-4 w-4 mr-2 text-green-600" />
                   <div className="flex-1">
-                    <div className="text-sm font-medium">Profesor</div>
-                    <div className="text-xs text-slate-500">teacher@utp.edu.pe</div>
+                    <div className="text-sm font-medium">Profesor (Backend Real)</div>
+                    <div className="text-xs text-slate-500">DNI: 12345678</div>
                   </div>
                 </Button>
               </div>

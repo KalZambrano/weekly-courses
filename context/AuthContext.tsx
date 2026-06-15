@@ -1,3 +1,4 @@
+//WEEKLY-COURSES/context/AuthContext.tsx
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -5,9 +6,10 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 type UserRole = 'student' | 'teacher' | null;
 
 interface User {
-  email: string;
+  email: string; // Lo usaremos para guardar el DNI por ahora
   role: UserRole;
   name: string;
+  token?: string;
 }
 
 interface AuthContextType {
@@ -31,20 +33,18 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Usuarios de prueba para demostración
-const MOCK_USERS = {
-  student: {
-    email: 'student@utp.edu.pe',
-    password: 'student123',
-    name: 'Juan Estudiante',
-    role: 'student' as UserRole,
-  },
-  teacher: {
-    email: 'teacher@utp.edu.pe',
-    password: 'teacher123',
-    name: 'María Profesora',
-    role: 'teacher' as UserRole,
-  },
+// Función auxiliar para decodificar el JWT en el frontend
+const decodeJWT = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -52,64 +52,83 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Check if user is logged in on mount
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const savedUser = localStorage.getItem('user');
-    
+
     if (loggedIn && savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
         setIsAuthenticated(true);
         setUser(parsedUser);
       } catch (error) {
-        // Si hay error al parsear, limpiar el localStorage
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('user');
+        logout();
       }
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (emailOrDni: string, password: string): Promise<boolean> => {
+
+    // BYPASS PARA EL ESTUDIANTE DE PRUEBA ---
+    if (emailOrDni === 'student@utp.edu.pe') {
+      const userData: User = {
+        email: 'student@utp.edu.pe',
+        role: 'student',
+        name: 'Estudiante de Prueba',
+        token: 'mock-token-123'
+      };
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', 'mock-token-123');
+      setIsAuthenticated(true);
+      setUser(userData);
+      return true;
+    }
+
     try {
-      // TODO: Replace with actual API call to Spring backend
-      const response = await fetch('http://localhost:8080/api/auth/login', {
+      // ATENCIÓN: Cambia el puerto 8080 por el puerto de tu API Gateway
+      // Si tu Gateway exige un prefijo (ej. /api/seguridad/auth...), modifícalo aquí.
+      const response = await fetch('http://localhost:8089/auth/loginAsistente', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        // Mapeamos lo que recibe React a lo que espera Spring Boot
+        body: JSON.stringify({
+          dni: emailOrDni,
+          contraseña: password
+        }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('user', JSON.stringify(data));
-        setIsAuthenticated(true);
-        setUser(data);
-        return true;
-      } else {
-        return false;
+        const data = await response.json(); // { mensaje: "...", token: "..." }
+
+        if (data.token) {
+          // Decodificamos el token para sacar el rol y el DNI
+          const decodedToken = decodeJWT(data.token);
+
+          // Mapeamos los roles de Spring Boot a los de Next.js
+          // Si es ADMIN lo hacemos teacher, si no, student.
+          const frontendRole: UserRole = decodedToken?.role === 'ADMIN' ? 'teacher' : 'student';
+
+          const userData: User = {
+            email: decodedToken?.sub || emailOrDni, // El subject del token es el DNI
+            role: frontendRole,
+            name: `Usuario ${decodedToken?.sub || ''}`, // Temporal hasta tener endpoint de perfil
+            token: data.token
+          };
+
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('token', data.token); // Guardamos el token para futuras peticiones
+
+          setIsAuthenticated(true);
+          setUser(userData);
+          return true;
+        }
       }
+      return false;
     } catch (error) {
-      console.error('Login error:', error);
-      // Mock login with test users
-      const mockUser = Object.values(MOCK_USERS).find(
-        (u) => u.email === email && u.password === password
-      );
-
-      if (mockUser) {
-        const userData = {
-          email: mockUser.email,
-          role: mockUser.role,
-          name: mockUser.name,
-        };
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('user', JSON.stringify(userData));
-        setIsAuthenticated(true);
-        setUser(userData);
-        return true;
-      }
-
+      console.error('Error de conexión con el backend:', error);
       return false;
     }
   };
@@ -117,6 +136,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setIsAuthenticated(false);
     setUser(null);
   };

@@ -1,3 +1,4 @@
+//WEEKLY-COURSES/components/auth/RoleGuard.tsx
 'use client';
 
 import { useEffect } from 'react';
