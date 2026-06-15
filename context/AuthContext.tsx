@@ -10,6 +10,7 @@ interface User {
   role: UserRole;
   name: string;
   token?: string;
+  id?: string;
 }
 
 interface AuthContextType {
@@ -87,7 +88,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       // ATENCIÓN: Cambia el puerto 8080 por el puerto de tu API Gateway
       // Si tu Gateway exige un prefijo (ej. /api/seguridad/auth...), modifícalo aquí.
-      const response = await fetch('http://localhost:8089/auth/loginAsistente', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/auth/loginAsistente`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -109,12 +110,53 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Mapeamos los roles de Spring Boot a los de Next.js
           // Si es ADMIN lo hacemos teacher, si no, student.
           const frontendRole: UserRole = decodedToken?.role === 'ADMIN' ? 'teacher' : 'student';
+          const dni = decodedToken?.sub || emailOrDni;
+
+          let name = `Usuario ${dni}`;
+          let id = dni;
+
+          if (frontendRole === 'student') {
+            try {
+              const res = await fetch(`http://localhost:8080/api/estudiante/findEstudianteByDni/${dni}`, {
+                headers: { 'Authorization': `Bearer ${data.token}` }
+              });
+              if (res.ok) {
+                const studentData = await res.json();
+                if (studentData && studentData.idEstudiante) {
+                  name = `${studentData.nombreEstudiante} ${studentData.apellidoEstudiante}`;
+                  id = studentData.idEstudiante.toString();
+                } else {
+                  console.warn("Student profile returned null or empty:", studentData);
+                }
+              } else {
+                console.error("Failed to fetch student profile, status:", res.status);
+              }
+            } catch (e) {
+              console.error("Error fetching student profile from backend:", e);
+            }
+          } else if (frontendRole === 'teacher') {
+            try {
+              const res = await fetch(`http://localhost:8080/api/asistente/findAsistenteByDni/${dni}`, {
+                headers: { 'Authorization': `Bearer ${data.token}` }
+              });
+              if (res.ok) {
+                const assistantData = await res.json();
+                if (assistantData) {
+                  name = `${assistantData.nombreUsuario} ${assistantData.apellidoUsuario}`;
+                  id = assistantData.idUsuario.toString();
+                }
+              }
+            } catch (e) {
+              console.error("Error fetching assistant profile from backend:", e);
+            }
+          }
 
           const userData: User = {
-            email: decodedToken?.sub || emailOrDni, // El subject del token es el DNI
+            email: dni,
             role: frontendRole,
-            name: `Usuario ${decodedToken?.sub || ''}`, // Temporal hasta tener endpoint de perfil
-            token: data.token
+            name: name,
+            token: data.token,
+            id: id
           };
 
           localStorage.setItem('isLoggedIn', 'true');

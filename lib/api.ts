@@ -1,7 +1,7 @@
 //WEEKLY-COURSES/lib/api.ts
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-  
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
   // Obtenemos el token guardado en el login
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -11,14 +11,16 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  // NUEVO: Si el endpoint ya empieza con http, vamos directo. Si no, usamos el Gateway.
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });
 
   if (!response.ok) {
     if (response.status === 401) {
-      // Si el token expiró, limpiamos y mandamos al login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('isLoggedIn');

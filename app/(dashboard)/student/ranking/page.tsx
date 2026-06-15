@@ -1,14 +1,69 @@
 //weekly-courses/app/(dashboard)/student/ranking/page.tsx
 'use client'
 
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/context/AuthContext'
+import { fetchApi } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { LevelBadge } from '@/components/custom/level-badge'
-import { ranking, currentStudent } from '@/data/mock-data'
-import { Trophy, Medal, Crown } from 'lucide-react'
+import { Trophy, Medal, Crown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function RankingPage() {
+  const { user } = useAuth()
+  const [ranking, setRanking] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadRankingData = async () => {
+      try {
+        // Fetch all students and all enrollments
+        const [allStudents, allEnrollments] = await Promise.all([
+          fetchApi('/estudiante/listEstudiantes').catch(() => []),
+          fetchApi('/inscripcion/listInscripciones').catch(() => [])
+        ]);
+
+        // Map and sum points
+        const mappedRanking = allStudents.map((s: any) => {
+          const studentEnrollments = allEnrollments.filter((e: any) => e.estudianteIdInscripcion === s.idEstudiante);
+          const totalPoints = studentEnrollments.reduce((sum: number, e: any) => sum + (e.totalPuntosInscripcion || 0), 0);
+
+          let level: "Bronce" | "Plata" | "Oro" = "Bronce";
+          if (totalPoints >= 3000) level = "Oro";
+          else if (totalPoints >= 2000) level = "Plata";
+
+          return {
+            id: s.idEstudiante.toString(),
+            name: `${s.nombreEstudiante} ${s.apellidoEstudiante}`,
+            avatar: `${s.nombreEstudiante[0]}${s.apellidoEstudiante[0]}`,
+            points: totalPoints,
+            level: level
+          };
+        })
+        .sort((a: any, b: any) => b.points - a.points)
+        .map((s: any, index: number) => ({ ...s, position: index + 1 }));
+
+        setRanking(mappedRanking);
+      } catch (err) {
+        console.error("Error loading ranking global:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRankingData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Cargando clasificación global...</span>
+      </div>
+    )
+  }
+
   const topThree = ranking.slice(0, 3)
   const restOfRanking = ranking.slice(3)
   
@@ -23,66 +78,74 @@ export default function RankingPage() {
       </div>
       
       {/* Top 3 Podium */}
-      <div className="mb-12">
-        <div className="flex items-end justify-center gap-4">
-          {/* 2nd Place */}
-          <div className="flex flex-col items-center">
-            <Avatar className="size-20 border-4 border-silver ring-4 ring-silver/20">
-              <AvatarFallback className="bg-silver text-silver-foreground text-xl font-bold">
-                {topThree[1]?.avatar}
-              </AvatarFallback>
-            </Avatar>
-            <div className="mt-3 text-center">
-              <Medal className="mx-auto size-8 text-silver" />
-              <p className="mt-1 font-semibold">{topThree[1]?.name}</p>
-              <p className="text-2xl font-bold text-primary">{topThree[1]?.points.toLocaleString()}</p>
-              <LevelBadge level={topThree[1]?.level || 'Bronce'} size="sm" />
-            </div>
-            <div className="mt-4 h-24 w-28 rounded-t-lg bg-silver/30 flex items-center justify-center">
-              <span className="text-4xl font-bold text-silver-foreground/50">2</span>
-            </div>
-          </div>
-          
-          {/* 1st Place */}
-          <div className="flex flex-col items-center">
-            <div className="relative">
-              <Crown className="absolute -top-8 left-1/2 -translate-x-1/2 size-10 text-gold" />
-              <Avatar className="size-28 border-4 border-gold ring-4 ring-gold/30">
-                <AvatarFallback className="bg-gold text-gold-foreground text-2xl font-bold">
-                  {topThree[0]?.avatar}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="mt-3 text-center">
-              <Trophy className="mx-auto size-10 text-gold" />
-              <p className="mt-1 text-lg font-semibold">{topThree[0]?.name}</p>
-              <p className="text-3xl font-bold text-primary">{topThree[0]?.points.toLocaleString()}</p>
-              <LevelBadge level={topThree[0]?.level || 'Oro'} />
-            </div>
-            <div className="mt-4 h-32 w-32 rounded-t-lg bg-gold/30 flex items-center justify-center">
-              <span className="text-5xl font-bold text-gold-foreground/50">1</span>
-            </div>
-          </div>
-          
-          {/* 3rd Place */}
-          <div className="flex flex-col items-center">
-            <Avatar className="size-20 border-4 border-bronze ring-4 ring-bronze/20">
-              <AvatarFallback className="bg-bronze text-bronze-foreground text-xl font-bold">
-                {topThree[2]?.avatar}
-              </AvatarFallback>
-            </Avatar>
-            <div className="mt-3 text-center">
-              <Medal className="mx-auto size-8 text-bronze" />
-              <p className="mt-1 font-semibold">{topThree[2]?.name}</p>
-              <p className="text-2xl font-bold text-primary">{topThree[2]?.points.toLocaleString()}</p>
-              <LevelBadge level={topThree[2]?.level || 'Bronce'} size="sm" />
-            </div>
-            <div className="mt-4 h-16 w-28 rounded-t-lg bg-bronze/30 flex items-center justify-center">
-              <span className="text-4xl font-bold text-bronze-foreground/50">3</span>
-            </div>
+      {topThree.length > 0 && (
+        <div className="mb-12">
+          <div className="flex items-end justify-center gap-4">
+            {/* 2nd Place */}
+            {topThree[1] && (
+              <div className="flex flex-col items-center">
+                <Avatar className="size-20 border-4 border-silver ring-4 ring-silver/20">
+                  <AvatarFallback className="bg-silver text-silver-foreground text-xl font-bold">
+                    {topThree[1]?.avatar}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="mt-3 text-center">
+                  <Medal className="mx-auto size-8 text-silver" />
+                  <p className="mt-1 font-semibold">{topThree[1]?.name}</p>
+                  <p className="text-2xl font-bold text-primary">{topThree[1]?.points.toLocaleString()}</p>
+                  <LevelBadge level={topThree[1]?.level || 'Bronce'} size="sm" />
+                </div>
+                <div className="mt-4 h-24 w-28 rounded-t-lg bg-silver/30 flex items-center justify-center">
+                  <span className="text-4xl font-bold text-silver-foreground/50">2</span>
+                </div>
+              </div>
+            )}
+            
+            {/* 1st Place */}
+            {topThree[0] && (
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <Crown className="absolute -top-8 left-1/2 -translate-x-1/2 size-10 text-gold" />
+                  <Avatar className="size-28 border-4 border-gold ring-4 ring-gold/30">
+                    <AvatarFallback className="bg-gold text-gold-foreground text-2xl font-bold">
+                      {topThree[0]?.avatar}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="mt-3 text-center">
+                  <Trophy className="mx-auto size-10 text-gold" />
+                  <p className="mt-1 text-lg font-semibold">{topThree[0]?.name}</p>
+                  <p className="text-3xl font-bold text-primary">{topThree[0]?.points.toLocaleString()}</p>
+                  <LevelBadge level={topThree[0]?.level || 'Oro'} />
+                </div>
+                <div className="mt-4 h-32 w-32 rounded-t-lg bg-gold/30 flex items-center justify-center">
+                  <span className="text-5xl font-bold text-gold-foreground/50">1</span>
+                </div>
+              </div>
+            )}
+            
+            {/* 3rd Place */}
+            {topThree[2] && (
+              <div className="flex flex-col items-center">
+                <Avatar className="size-20 border-4 border-bronze ring-4 ring-bronze/20">
+                  <AvatarFallback className="bg-bronze text-bronze-foreground text-xl font-bold">
+                    {topThree[2]?.avatar}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="mt-3 text-center">
+                  <Medal className="mx-auto size-8 text-bronze" />
+                  <p className="mt-1 font-semibold">{topThree[2]?.name}</p>
+                  <p className="text-2xl font-bold text-primary">{topThree[2]?.points.toLocaleString()}</p>
+                  <LevelBadge level={topThree[2]?.level || 'Bronce'} size="sm" />
+                </div>
+                <div className="mt-4 h-16 w-28 rounded-t-lg bg-bronze/30 flex items-center justify-center">
+                  <span className="text-4xl font-bold text-bronze-foreground/50">3</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
       
       {/* Full Ranking List */}
       <Card>
@@ -92,7 +155,7 @@ export default function RankingPage() {
         <CardContent>
           <div className="space-y-2">
             {ranking.map((student) => {
-              const isCurrentUser = student.id === currentStudent.id
+              const isCurrentUser = student.id === user?.id
               const isTopThree = student.position <= 3
               
               return (
