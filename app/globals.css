@@ -158,3 +158,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Driver.js Custom Styles */
+.driver-popover {
+  @apply rounded-lg border border-border bg-card shadow-lg;
+}
+
+.driver-popover-title {
+  @apply font-bold text-foreground;
+}
+
+.driver-popover-description {
+  @apply text-muted-foreground;
+}
+
+.driver-popover-footer {
+  @apply flex gap-2 justify-end;
+}
+
+.driver-popover-footer button {
+  @apply px-3 py-1 rounded text-sm font-medium transition-colors;
+}
+
+.driver-popover-footer button:not(.driver-popover-skip-btn) {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+}
+
+.driver-popover-skip-btn {
+  @apply bg-muted text-muted-foreground hover:bg-muted/90;
+}
+
+.driver-overlay {
+  @apply rounded-lg;
+}
