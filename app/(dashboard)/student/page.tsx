@@ -1,5 +1,6 @@
-//weekly-courses/app/(dashboard)/student/page.tsx
 "use client";
+import { toast } from 'sonner'
+//weekly-courses/app/(dashboard)/student/page.tsx
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -51,13 +52,19 @@ export default function StudentDashboard() {
         }
 
         // 1. Obtener la lista de todos los estudiantes para el Ranking y perfil
-        const allStudents = await fetchApi("/estudiante/listEstudiantes").catch(() => []);
+        const allStudents = await fetchApi("/estudiante/listEstudiantes").catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          });
         
         // Buscar el estudiante activo en la lista real del backend
         const realStudent = allStudents.find((s: any) => s.idEstudiante.toString() === user.id);
         
         // 2. Obtener inscripciones
-        const enrollments = await fetchApi("/inscripcion/listInscripciones").catch(() => []);
+        const enrollments = await fetchApi("/inscripcion/listInscripciones").catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          });
         
         // Filtrar las inscripciones del estudiante actual
         const studentId = parseInt(user.id);

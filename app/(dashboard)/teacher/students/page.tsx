@@ -1,5 +1,6 @@
-//weekly-courses/app/(dashboard)/teacher/students/page.tsx
 'use client'
+import { toast } from 'sonner'
+//weekly-courses/app/(dashboard)/teacher/students/page.tsx
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,11 +10,23 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { LevelBadge } from '@/components/custom/level-badge'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { fetchApi } from '@/lib/api' // <-- Importamos nuestro interceptor
 import {
   Search,
+  Trash2,
+  Pencil,
   Filter,
   Users,
   Mail,
@@ -43,6 +56,70 @@ export default function TeacherStudentsPage() {
   const [cargandoNotas, setCargandoNotas] = useState(false)
 
   const [students, setStudents] = useState<any[]>([])
+
+  // Form: Editar Estudiante
+  const [tick, setTick] = useState(0)
+  const [isEditStudentOpen, setIsEditStudentOpen] = useState(false)
+  const [editStudentId, setEditStudentId] = useState<string | null>(null)
+  const [editStudentNombre, setEditStudentNombre] = useState('')
+  const [editStudentApellido, setEditStudentApellido] = useState('')
+  const [editStudentEmail, setEditStudentEmail] = useState('')
+  const [editStudentPass, setEditStudentPass] = useState('')
+  const [updatingStudent, setUpdatingStudent] = useState(false)
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editStudentId || !editStudentNombre.trim() || !editStudentApellido.trim() || !editStudentEmail.trim()) return
+    setUpdatingStudent(true)
+
+    try {
+      await fetchApi(`/estudiante/updateEstudiante/${editStudentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombreEstudiante: editStudentNombre,
+          apellidoEstudiante: editStudentApellido,
+          correoEstudiante: editStudentEmail,
+          contrasenaEstudiante: editStudentPass
+        })
+      })
+
+      toast.success("¡Estudiante Actualizado!", {
+        description: `Los datos de ${editStudentNombre} han sido modificados con éxito.`,
+      })
+
+      setIsEditStudentOpen(false)
+      setTick(t => t + 1)
+    } catch (err) {
+      toast.error("Error al Actualizar", {
+        description: "Hubo un error al modificar el estudiante en el servidor."
+      })
+    } finally {
+      setUpdatingStudent(false)
+    }
+  }
+
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!window.confirm("¿Estás seguro de eliminar este estudiante de la plataforma?")) return
+    
+    try {
+      await fetchApi(`/estudiante/deleteEstudiante/${studentId}`, {
+        method: 'DELETE'
+      })
+
+      toast.success("¡Estudiante Eliminado!", {
+        description: `El estudiante ha sido borrado con éxito.`,
+      })
+
+      setSelectedStudent(null)
+      setTick(t => t + 1)
+    } catch (err) {
+      toast.error("Error al Eliminar", {
+        description: "Hubo un error al eliminar el estudiante en el servidor."
+      })
+    }
+  }
+
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -50,10 +127,22 @@ export default function TeacherStudentsPage() {
       setLoading(true)
       try {
         const [allSts, allEnrollments, allAssignments, allCourses] = await Promise.all([
-          fetchApi('/estudiante/listEstudiantes').catch(() => []),
-          fetchApi('/inscripcion/listInscripciones').catch(() => []),
-          fetchApi('/asignacion/listAsignacion').catch(() => []),
-          fetchApi('/curso/listCurso').catch(() => [])
+          fetchApi('/estudiante/listEstudiantes').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/inscripcion/listInscripciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/asignacion/listAsignacion').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/curso/listCurso').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          })
         ]);
 
         const mapped = allSts.map((s: any) => {
@@ -102,7 +191,10 @@ export default function TeacherStudentsPage() {
             level: level,
             progress: progress,
             streak: 5,
-            courses: studentCourses
+            courses: studentCourses,
+            rawNombre: s.nombreEstudiante,
+            rawApellido: s.apellidoEstudiante,
+            rawPass: s.contrasenaEstudiante
           };
         });
 
@@ -115,7 +207,7 @@ export default function TeacherStudentsPage() {
     };
 
     loadData();
-  }, []);
+  }, [tick]);
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -255,7 +347,22 @@ export default function TeacherStudentsPage() {
         <div>
           {selectedStudentData ? (
             <Card className="sticky top-8">
-              <CardHeader className="text-center pb-2">
+              <CardHeader className="text-center pb-2 relative">
+                <div className="absolute top-4 right-4 flex gap-2">
+                   <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => {
+                     setEditStudentId(selectedStudentData.id);
+                     setEditStudentNombre(selectedStudentData.rawNombre);
+                     setEditStudentApellido(selectedStudentData.rawApellido);
+                     setEditStudentEmail(selectedStudentData.email);
+                     setEditStudentPass(selectedStudentData.rawPass);
+                     setIsEditStudentOpen(true);
+                   }}>
+                     <Pencil className="size-4" />
+                   </Button>
+                   <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteStudent(selectedStudentData.id)}>
+                     <Trash2 className="size-4" />
+                   </Button>
+                </div>
                 <Avatar className="mx-auto size-20 border-4 border-primary/20">
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                     {selectedStudentData.avatar}
@@ -406,6 +513,66 @@ export default function TeacherStudentsPage() {
           )}
         </div>
       </div>
+
+      {/* MODAL: EDITAR ESTUDIANTE */}
+      <Dialog open={isEditStudentOpen} onOpenChange={setIsEditStudentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Estudiante</DialogTitle>
+            <DialogDescription>
+              Modifica los datos personales y de acceso del estudiante.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateStudent} className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editStuNombre">Nombre</Label>
+                <Input
+                  id="editStuNombre"
+                  value={editStudentNombre}
+                  onChange={(e) => setEditStudentNombre(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editStuApellido">Apellido</Label>
+                <Input
+                  id="editStuApellido"
+                  value={editStudentApellido}
+                  onChange={(e) => setEditStudentApellido(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editStuEmail">Correo Electrónico</Label>
+              <Input
+                id="editStuEmail"
+                type="email"
+                value={editStudentEmail}
+                onChange={(e) => setEditStudentEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editStuPass">Contraseña</Label>
+              <Input
+                id="editStuPass"
+                type="text"
+                value={editStudentPass}
+                onChange={(e) => setEditStudentPass(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={updatingStudent}>
+                {updatingStudent ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Guardar Cambios"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

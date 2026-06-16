@@ -1,5 +1,5 @@
-//weekly-courses/app/(dashboard)/teacher/page.tsx
 'use client'
+//weekly-courses/app/(dashboard)/teacher/page.tsx
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'

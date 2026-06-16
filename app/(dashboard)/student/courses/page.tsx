@@ -1,5 +1,6 @@
-//weekly-courses/app/(dashboard)/student/courses/page.tsx
 'use client'
+import { toast } from 'sonner'
+//weekly-courses/app/(dashboard)/student/courses/page.tsx
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
@@ -37,9 +38,18 @@ export default function CoursesPage() {
         
         // Fetch enrollments, assignments, and courses
         const [allEnrollments, allAssignments, allCourses] = await Promise.all([
-          fetchApi('/inscripcion/listInscripciones').catch(() => []),
-          fetchApi('/asignacion/listAsignacion').catch(() => []),
-          fetchApi('/curso/listCurso').catch(() => [])
+          fetchApi('/inscripcion/listInscripciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/asignacion/listAsignacion').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/curso/listCurso').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          })
         ]);
 
         // Filter enrollments for this student

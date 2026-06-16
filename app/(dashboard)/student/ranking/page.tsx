@@ -1,5 +1,6 @@
-//weekly-courses/app/(dashboard)/student/ranking/page.tsx
 'use client'
+import { toast } from 'sonner'
+//weekly-courses/app/(dashboard)/student/ranking/page.tsx
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
@@ -20,8 +21,14 @@ export default function RankingPage() {
       try {
         // Fetch all students and all enrollments
         const [allStudents, allEnrollments] = await Promise.all([
-          fetchApi('/estudiante/listEstudiantes').catch(() => []),
-          fetchApi('/inscripcion/listInscripciones').catch(() => [])
+          fetchApi('/estudiante/listEstudiantes').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/inscripcion/listInscripciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          })
         ]);
 
         // Map and sum points

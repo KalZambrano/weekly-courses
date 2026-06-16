@@ -2,6 +2,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { fetchApi } from '@/lib/api';
 
 type UserRole = 'student' | 'teacher' | null;
 
@@ -86,13 +87,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     try {
-      // ATENCIÓN: Cambia el puerto 8080 por el puerto de tu API Gateway
-      // Si tu Gateway exige un prefijo (ej. /api/seguridad/auth...), modifícalo aquí.
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/auth/loginAsistente`, {
+      // ATENCIÓN: Usando fetchApi en lugar de fetch directo para usar la configuración centralizada
+      const data = await fetchApi('/auth/loginAsistente', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         // Mapeamos lo que recibe React a lo que espera Spring Boot
         body: JSON.stringify({
           dni: emailOrDni,
@@ -100,10 +97,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json(); // { mensaje: "...", token: "..." }
-
-        if (data.token) {
+      if (data && data.token) {
           // Decodificamos el token para sacar el rol y el DNI
           const decodedToken = decodeJWT(data.token);
 
@@ -117,34 +111,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
           if (frontendRole === 'student') {
             try {
-              const res = await fetch(`http://localhost:8080/api/estudiante/findEstudianteByDni/${dni}`, {
+              const studentData = await fetchApi(`/estudiante/findEstudianteByDni/${dni}`, {
                 headers: { 'Authorization': `Bearer ${data.token}` }
               });
-              if (res.ok) {
-                const studentData = await res.json();
-                if (studentData && studentData.idEstudiante) {
-                  name = `${studentData.nombreEstudiante} ${studentData.apellidoEstudiante}`;
-                  id = studentData.idEstudiante.toString();
-                } else {
-                  console.warn("Student profile returned null or empty:", studentData);
-                }
+              if (studentData && studentData.idEstudiante) {
+                name = `${studentData.nombreEstudiante} ${studentData.apellidoEstudiante}`;
+                id = studentData.idEstudiante.toString();
               } else {
-                console.error("Failed to fetch student profile, status:", res.status);
+                console.warn("Student profile returned null or empty:", studentData);
               }
             } catch (e) {
               console.error("Error fetching student profile from backend:", e);
             }
           } else if (frontendRole === 'teacher') {
             try {
-              const res = await fetch(`http://localhost:8080/api/asistente/findAsistenteByDni/${dni}`, {
+              const assistantData = await fetchApi(`/asistente/findAsistenteByDni/${dni}`, {
                 headers: { 'Authorization': `Bearer ${data.token}` }
               });
-              if (res.ok) {
-                const assistantData = await res.json();
-                if (assistantData) {
-                  name = `${assistantData.nombreUsuario} ${assistantData.apellidoUsuario}`;
-                  id = assistantData.idUsuario.toString();
-                }
+              if (assistantData) {
+                name = `${assistantData.nombreUsuario} ${assistantData.apellidoUsuario}`;
+                id = assistantData.idUsuario.toString();
               }
             } catch (e) {
               console.error("Error fetching assistant profile from backend:", e);
@@ -167,7 +153,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(userData);
           return true;
         }
-      }
+
       return false;
     } catch (error) {
       console.error('Error de conexión con el backend:', error);

@@ -1,5 +1,6 @@
-//weekly-courses/app/(dashboard)/student/courses/[id]/page.tsx
 'use client'
+import { toast } from 'sonner'
+//weekly-courses/app/(dashboard)/student/courses/[id]/page.tsx
 
 import { useAuth } from '@/context/AuthContext'
 import { use, useState, useEffect } from 'react'
@@ -98,7 +99,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         const courseId = parseInt(id);
 
         // 1. Obtener detalles del curso
-        const realCourse = await fetchApi(`/curso/findCursoById/${courseId}`).catch(() => null);
+        const realCourse = await fetchApi(`/curso/findCursoById/${courseId}`).catch((e) => {
+            toast.error("Error de conexión", { description: "No se encontró el recurso solicitado." })
+            return null
+          });
         if (!realCourse) {
           setCourse(null);
           setLoading(false);
@@ -107,12 +111,30 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
         // 2. Obtener asignaciones, materiales, inscripciones, evaluaciones y notas
         const [allAssignments, allMaterials, allEnrollments, allEvaluations, myGrades, allStudents] = await Promise.all([
-          fetchApi('/asignacion/listAsignacion').catch(() => []),
-          fetchApi('/material/listMaterial').catch(() => []),
-          fetchApi('/inscripcion/listInscripciones').catch(() => []),
-          fetchApi('/evaluacion/listEvaluaciones').catch(() => []),
-          fetchApi(`/nota/findNotasByEstudiante/${studentId}`).catch(() => []),
-          fetchApi('/estudiante/listEstudiantes').catch(() => [])
+          fetchApi('/asignacion/listAsignacion').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/material/listMaterial').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/inscripcion/listInscripciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/evaluacion/listEvaluaciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi(`/nota/findNotasByEstudiante/${studentId}`).catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/estudiante/listEstudiantes').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          })
         ]);
 
         // Encontrar asignación para este curso
