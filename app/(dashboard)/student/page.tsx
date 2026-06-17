@@ -11,6 +11,8 @@ import { ProgressRing } from "@/components/custom/progress-ring";
 import { RecentActivityList } from "@/components/custom/recent-activity-list";
 import { CourseCard } from "@/components/custom/course-card";
 import { MiniRanking } from "@/components/custom/mini-ranking";
+import { StudentTutorial } from "@/components/tutorials/student-tutorial";
+import { useTutorial } from "@/hooks/useTutorial";
 import {
   currentStudent,
   courses,
@@ -23,14 +25,28 @@ import {
   getPointsToNextLevel,
   getMotivationalMessage,
 } from "@/lib/gamification";
-import { Star, Target, Flame, Sparkles } from "lucide-react";
+import { Star, Target, Flame, Sparkles, HelpCircle } from "lucide-react";
 
 export default function StudentDashboard() {
   const [motivationalMessage, setMotivationalMessage] = useState("");
+  const { shouldShowTutorial, isLoading, markTutorialAsShown } = useTutorial('student');
 
   useEffect(() => {
     setMotivationalMessage(getMotivationalMessage(motivationalMessages));
   }, []);
+
+  useEffect(() => {
+    // Auto-start tutorial if it should be shown and everything is loaded
+    if (!isLoading && shouldShowTutorial) {
+      const timer = setTimeout(() => {
+        const tutorialButton = document.getElementById('start-student-tutorial');
+        if (tutorialButton) {
+          tutorialButton.click();
+        }
+      }, 500); // Small delay to ensure DOM is ready
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, shouldShowTutorial]);
 
   const enrolledCourses = courses.filter((c) =>
     currentStudent.enrolledCourses.includes(c.id),
@@ -47,8 +63,10 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen p-8">
+      <StudentTutorial onTutorialEnd={markTutorialAsShown} />
+      
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className="student-header mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-4">
           <Avatar className="size-16 border-4 border-primary/20">
             <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
@@ -77,10 +95,24 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Help Button */}
+        <button
+          onClick={() => {
+            const tutorialButton = document.getElementById('start-student-tutorial');
+            if (tutorialButton) {
+              tutorialButton.click();
+            }
+          }}
+          className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+        >
+          <HelpCircle className="size-4" />
+          Ver Tutorial
+        </button>
       </div>
 
       {/* Stats Grid */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="student-stats-grid mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatsCard
           title="Puntos Totales"
           value={currentStudent.points.toLocaleString('es-ES')}
@@ -123,7 +155,7 @@ export default function StudentDashboard() {
       {/* Main Content Grid */}
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Left Column - Courses and Activity */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="student-ranking lg:col-span-2 space-y-8">
           {/* Miniranking */}
           <MiniRanking
             ranking={ranking}
@@ -134,12 +166,12 @@ export default function StudentDashboard() {
 
         {/* Right Column - Ranking */}
         <div className="space-y-8">
-          <section>
+          <section className="student-recent-activity">
             <RecentActivityList activities={recentActivities.slice(0, 5)} />
           </section>
 
           {/* Quick Stats Card */}
-          <Card>
+          <Card className="student-activity-summary">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Resumen de Actividad</CardTitle>
             </CardHeader>

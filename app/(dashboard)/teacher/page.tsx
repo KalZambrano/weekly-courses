@@ -1,11 +1,14 @@
 //weekly-courses/app/(dashboard)/teacher/page.tsx
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { StatsCard } from '@/components/custom/stats-card'
 import { LevelBadge } from '@/components/custom/level-badge'
+import { TeacherTutorial } from '@/components/tutorials/teacher-tutorial'
+import { useTutorial } from '@/hooks/useTutorial'
 import { allStudents, courses, teacherMetrics, ranking } from '@/data/mock-data'
 import { 
   Users, 
@@ -16,11 +19,27 @@ import {
   Clock,
   ArrowUpRight,
   ArrowDownRight,
-  BarChart3
+  BarChart3,
+  HelpCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function TeacherDashboard() {
+  const { shouldShowTutorial, isLoading, markTutorialAsShown } = useTutorial('teacher');
+  
+  useEffect(() => {
+    // Auto-start tutorial if it should be shown and everything is loaded
+    if (!isLoading && shouldShowTutorial) {
+      const timer = setTimeout(() => {
+        const tutorialButton = document.getElementById('start-teacher-tutorial');
+        if (tutorialButton) {
+          tutorialButton.click();
+        }
+      }, 500); // Small delay to ensure DOM is ready
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, shouldShowTutorial]);
+
   const averageProgress = allStudents.reduce((sum, s) => sum + s.progress, 0) / allStudents.length
   const activeStudentsCount = allStudents.filter(s => s.streak > 0).length
   
@@ -39,16 +58,33 @@ export default function TeacherDashboard() {
   
   return (
     <div className="min-h-screen p-8">
+      <TeacherTutorial onTutorialEnd={markTutorialAsShown} />
+      
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Panel del Docente</h1>
-        <p className="mt-2 text-muted-foreground">
-          Monitorea el progreso y rendimiento de tus estudiantes
-        </p>
+      <div className="teacher-header mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Panel del Docente</h1>
+          <p className="mt-2 text-muted-foreground">
+            Monitorea el progreso y rendimiento de tus estudiantes
+          </p>
+        </div>
+        {/* Help Button */}
+        <button
+          onClick={() => {
+            const tutorialButton = document.getElementById('start-teacher-tutorial');
+            if (tutorialButton) {
+              tutorialButton.click();
+            }
+          }}
+          className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors w-fit"
+        >
+          <HelpCircle className="size-4" />
+          Ver Tutorial
+        </button>
       </div>
       
       {/* Key Metrics */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="teacher-key-metrics mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Estudiantes"
           value={teacherMetrics.totalStudents}
@@ -88,7 +124,7 @@ export default function TeacherDashboard() {
                 Resumen de Cursos
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="teacher-course-overview space-y-4">
               {courses.map((course) => {
                 const enrolledCount = allStudents.filter(s => 
                   s.enrolledCourses.includes(course.id)
@@ -127,7 +163,7 @@ export default function TeacherDashboard() {
                 Todos los Estudiantes
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="teacher-students-table">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -189,7 +225,7 @@ export default function TeacherDashboard() {
           {/* Level Distribution */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
+              <CardTitle className="teacher-level-distribution flex items-center gap-2 text-lg">
                 <BarChart3 className="size-5 text-primary" />
                 Distribución por Nivel
               </CardTitle>
@@ -246,7 +282,7 @@ export default function TeacherDashboard() {
           {/* Top Performers */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
+              <CardTitle className="teacher-top-performers flex items-center gap-2 text-lg">
                 <Trophy className="size-5 text-gold" />
                 Top Rendimiento
               </CardTitle>
@@ -285,7 +321,7 @@ export default function TeacherDashboard() {
           {/* Students Needing Attention */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
+              <CardTitle className="teacher-needs-attention flex items-center gap-2 text-lg">
                 <Clock className="size-5 text-destructive" />
                 Requieren Atención
               </CardTitle>
