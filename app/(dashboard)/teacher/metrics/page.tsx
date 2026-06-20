@@ -1,5 +1,5 @@
-//weekly-courses/app/(dashboard)/teacher/metrics/page.tsx
 'use client'
+//weekly-courses/app/(dashboard)/teacher/metrics/page.tsx
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'

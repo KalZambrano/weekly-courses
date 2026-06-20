@@ -1,8 +1,9 @@
-//weekly-courses/app/(dashboard)/student/courses/[id]/page.tsx
 'use client'
+import { toast } from 'sonner'
+//weekly-courses/app/(dashboard)/student/courses/[id]/page.tsx
 
 import { useAuth } from '@/context/AuthContext'
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -16,20 +17,53 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
-import { ActivityItem } from '@/components/custom/activity-item'
 import { MiniRanking } from '@/components/custom/mini-ranking'
 import { WeeklyActivities } from '@/components/custom/weekly-activities'
 import { ActivityViewer } from '@/components/custom/activity-viewer'
 import { QuizViewer } from '@/components/custom/quiz-viewer'
-import { QuizFeedback } from '@/components/custom/quiz-feedback'
 import { LevelBadge } from '@/components/custom/level-badge'
 
 import { useToast } from '@/hooks/use-toast'
-import { completeActivity, getCurrentWeek } from '@/lib/gamification'
+import { getCurrentWeek } from '@/lib/gamification'
 import { ArrowLeft, BookOpen, CheckCircle2, Clock, Trophy, Search, Mail, Send, Loader2, Users } from 'lucide-react'
+import { fetchApi } from '@/lib/api'
 
-import { courses, allStudents, currentStudent } from '@/data/mock-data'
 import type { Activity, RankingStudent, Student, QuizAttempt } from '@/data/mock-data'
+
+const defaultQuizQuestions = [
+  {
+    id: "q1",
+    question: "¿Cuál es el valor de x en la ecuación 2x + 5 = 15?",
+    options: ["x = 5", "x = 10", "x = 15", "x = 2"],
+    correctAnswer: 0,
+    explanation: "Restamos 5 a ambos lados: 2x = 10. Luego dividimos por 2: x = 5.",
+    topic: "Ecuaciones Lineales"
+  },
+  {
+    id: "q2",
+    question: "¿Qué representa la pendiente (m) en una ecuación lineal y = mx + b?",
+    options: ["La intersección con el eje Y", "La inclinación de la recta", "La intersección con el eje X", "El valor constante"],
+    correctAnswer: 1,
+    explanation: "La pendiente m mide la inclinación o tasa de cambio de la recta.",
+    topic: "Definiciones"
+  },
+  {
+    id: "q3",
+    question: "¿Cuál es el resultado de resolver 3x - 7 = 5x + 9?",
+    options: ["x = -8", "x = 8", "x = -1", "x = 1"],
+    correctAnswer: 0,
+    explanation: "Restamos 3x a ambos lados: -7 = 2x + 9. Restamos 9: -16 = 2x. Dividimos por 2: x = -8.",
+    topic: "Ecuaciones de Primer Grado"
+  },
+  {
+    id: "q4",
+    question: "¿Cómo se llama el punto (0, b) en la recta y = mx + b?",
+    options: ["Pendiente", "Intersección con el eje X", "Intersección con el eje Y", "Origen"],
+    correctAnswer: 2,
+    explanation: "Cuando x = 0, y = b, por lo tanto (0, b) es la intersección con el eje Y.",
+    topic: "Gráficas"
+  }
+];
 
 interface CourseDetailPageProps {
   params: Promise<{ id: string }>
@@ -39,61 +73,227 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { id } = use(params)
   const { user } = useAuth()
   const { toast } = useToast()
-  const course = courses.find(c => c.id === id)
 
+  const [course, setCourse] = useState<any>(null)
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [courseStudents, setCourseStudents] = useState<Student[]>([])
+  const [courseRanking, setCourseRanking] = useState<RankingStudent[]>([])
+  const [currentUserRanking, setCurrentUserRanking] = useState<any>(null)
+  
   const [activeActivity, setActiveActivity] = useState<Activity | null>(null)
-  const [, setTick] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [tick, setTick] = useState(0)
 
   // ESTADOS PARA LA PESTAÑA DE COMPAÑEROS Y EL MODAL
   const [searchQuery, setSearchQuery] = useState('')
-  const [studentToInvite, setStudentToInvite] = useState<Student | RankingStudent | null>(null)
+  const [studentToInvite, setStudentToInvite] = useState<any>(null)
   const [inviteMessage, setInviteMessage] = useState('')
   const [isSendingInvite, setIsSendingInvite] = useState(false)
 
-  if (!course) {
-    notFound()
+  useEffect(() => {
+    if (!user || !user.id) return;
+
+    const loadCourseData = async () => {
+      try {
+        const studentId = parseInt(user.id || '0');
+        const courseId = parseInt(id);
+
+        // 1. Obtener detalles del curso
+        const realCourse = await fetchApi(`/curso/findCursoById/${courseId}`).catch((e) => {
+            toast.error("Error de conexión", { description: "No se encontró el recurso solicitado." })
+            return null
+          });
+        if (!realCourse) {
+          setCourse(null);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Obtener asignaciones, materiales, inscripciones, evaluaciones y notas
+        const [allAssignments, allMaterials, allEnrollments, allEvaluations, myGrades, allStudents] = await Promise.all([
+          fetchApi('/asignacion/listAsignacion').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/material/listMaterial').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/inscripcion/listInscripciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/evaluacion/listEvaluaciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi(`/nota/findNotasByEstudiante/${studentId}`).catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/estudiante/listEstudiantes').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          })
+        ]);
+
+        // Encontrar asignación para este curso
+        const assignment = allAssignments.find((a: any) => a.cursoIdAsignacion === courseId);
+        const assignmentId = assignment ? assignment.idAsignacion : null;
+
+        // Filtrar materiales de esta asignación
+        const courseMaterials = allMaterials.filter((m: any) => m.asignacionCuAsIdMaterial === assignmentId);
+
+        // Mapear materiales a Actividades
+        const mappedActivities: Activity[] = courseMaterials.map((m: any) => {
+          // Buscar evaluación asociada a este material
+          const evaluation = allEvaluations.find((e: any) => e.materialCuEvaluacion === m.idMaterial);
+          const evaluationId = evaluation ? evaluation.idEvaluacion : null;
+          
+          // Buscar nota si ya fue calificado
+          const grade = evaluationId ? myGrades.find((g: any) => g.evaluacionCuNota?.idEvaluacion === evaluationId) : null;
+          const status = grade ? 'completed' : 'pending';
+
+          const isQuiz = evaluation !== undefined || m.tipoMaterial?.toLowerCase().includes('quiz') || m.tipoMaterial?.toLowerCase().includes('evaluacion');
+
+          let quizQuestions = defaultQuizQuestions;
+          if (evaluation && evaluation.preguntasEvaluacion) {
+            try {
+              const parsed = typeof evaluation.preguntasEvaluacion === 'string' 
+                ? JSON.parse(evaluation.preguntasEvaluacion) 
+                : evaluation.preguntasEvaluacion;
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                quizQuestions = parsed;
+              }
+            } catch (err) {
+              console.error("Error parsing quiz questions from backend:", err);
+            }
+          }
+
+          return {
+            id: m.idMaterial.toString(),
+            name: m.tituloMaterial,
+            description: m.descripcionMaterial,
+            type: isQuiz ? 'quiz' : 'reading',
+            duration: '15 min',
+            points: evaluation ? Math.round(evaluation.puntosEvaluacion) : 100,
+            weekNumber: 1, // Por defecto Semana 1
+            status: status,
+            url: m.urlMaterial || '#',
+            backendEvaluationId: evaluationId, // Guardar ID del backend
+            quiz: isQuiz ? {
+              questions: quizQuestions,
+              maxAttempts: 3,
+              passingScore: 12
+            } : undefined,
+            bestAttemptScore: grade ? Math.round(grade.notaNota) : undefined,
+            isApproved: grade ? grade.notaNota >= 12 : undefined
+          };
+        });
+
+        // Filtrar inscripciones para este curso
+        const courseEnrollments = allEnrollments.filter((e: any) => e.asignacionIdInscripcion === assignmentId);
+        
+        // Mapear estudiantes del curso
+        const mappedStudents: Student[] = courseEnrollments.map((enrollment: any) => {
+          const s = allStudents.find((student: any) => student.idEstudiante === enrollment.estudianteIdInscripcion);
+          if (!s) return null;
+          
+          const sPoints = enrollment.totalPuntosInscripcion || 0;
+          let sLevel: "Bronce" | "Plata" | "Oro" = "Bronce";
+          if (sPoints >= 3000) sLevel = "Oro";
+          else if (sPoints >= 2000) sLevel = "Plata";
+
+          return {
+            id: s.idEstudiante.toString(),
+            name: `${s.nombreEstudiante} ${s.apellidoEstudiante}`,
+            email: s.correoEstudiante,
+            avatar: `${s.nombreEstudiante[0]}${s.apellidoEstudiante[0]}`,
+            points: sPoints,
+            level: sLevel,
+            progress: sPoints > 100 ? 100 : Math.round(sPoints),
+            streak: 5,
+            enrolledCourses: [id]
+          };
+        }).filter((s: any) => s !== null);
+
+        setCourseStudents(mappedStudents);
+
+        // Generar Ranking del curso
+        const sortedRanking = [...mappedStudents]
+          .sort((a, b) => b.points - a.points)
+          .map((s, index) => ({ ...s, position: index + 1 }));
+        setCourseRanking(sortedRanking);
+
+        // Buscar desempeño del estudiante actual
+        const curUserRank = sortedRanking.find(s => s.id === user.id);
+        setCurrentUserRanking(curUserRank || sortedRanking[0] || null);
+
+        // Progreso del curso basado en actividades completadas
+        const totalAct = mappedActivities.length;
+        const compAct = mappedActivities.filter(a => a.status === 'completed').length;
+        const progressPercent = totalAct > 0 ? Math.round((compAct / totalAct) * 100) : 0;
+
+        setCourse({
+          id: realCourse.idCurso.toString(),
+          name: realCourse.nombreCurso,
+          description: realCourse.descripcionCurso,
+          icon: '📚', // icono fallback
+          teacher: assignment ? `Asistente de Aprendizaje (Zaiko)` : 'Sin asignar',
+          section: '101',
+          progress: progressPercent,
+          totalActivities: totalAct,
+          completedActivities: compAct
+        });
+
+        setActivities(mappedActivities);
+
+      } catch (err) {
+        console.error("Error loading course details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCourseData();
+  }, [user, id, tick]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Cargando detalles del curso...</span>
+      </div>
+    );
   }
 
-  // LÓGICA DE DATOS
-  const courseStudents = allStudents.filter(s => s.enrolledCourses.includes(course.id))
-  
-  const courseRanking: RankingStudent[] = [...courseStudents]
-    .sort((a, b) => b.points - a.points)
-    .map((s, index) => ({ ...s, position: index + 1 }))
+  if (!course) {
+    notFound();
+  }
 
-  const currentStudentData = allStudents.find(s => s.email === user?.email) || currentStudent
-  const currentUserRanking = courseRanking.find(s => s.id === currentStudentData.id) || courseRanking[0]
-  
-  // Filtrado para la pestaña de compañeros
-  const filteredCompanions = courseStudents.filter(s => 
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) && s.id !== currentStudentData.id
-  )
-
-  const completedActivities = course.activities.filter(a => a.status === 'completed')
-  const inProgressActivities = course.activities.filter(a => a.status === 'in-progress')
-  const pendingActivities = course.activities.filter(a => a.status === 'pending')
-
-  const totalPoints = course.activities.reduce((sum, a) => sum + a.points, 0)
-  const earnedPoints = completedActivities.reduce((sum, a) => sum + a.points, 0)
-  const totalDuration = course.activities.reduce((sum, a) => {
-    const minutes = parseInt(a.duration)
-    return sum + (isNaN(minutes) ? 0 : minutes)
-  }, 0)
+  const completedActivities = activities.filter(a => a.status === 'completed')
+  const totalPoints = activities.reduce((sum, a) => sum + a.points, 0)
+  const earnedPoints = completedActivities.reduce((sum, a) => sum + (a.bestAttemptScore || a.points), 0)
+  const totalDuration = activities.length * 15; // fallback estimación
 
   const currentWeek = getCurrentWeek()
 
-  // FUNCIÓN PARA ABRIR EL MODAL
+  const filteredCompanions = courseStudents.filter(s => 
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) && s.id !== user?.id
+  )
+
+  // FUNCIÓN PARA ABRIR EL MODAL DE INVITACIÓN
   const openInviteModal = (student: Student | RankingStudent) => {
     setStudentToInvite(student)
     setInviteMessage(`¡Hola ${student.name.split(' ')[0]}! Me gustaría invitarte a formar un grupo de estudio para este curso. ¿Te animas?`)
   }
 
-  // FUNCIÓN PARA ENVIAR INVITACIÓN
+  // FUNCIÓN PARA ENVIAR INVITACIÓN (Simulada)
   const handleSendInvitation = async () => {
     if (!studentToInvite) return
     setIsSendingInvite(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simula backend
+      await new Promise(resolve => setTimeout(resolve, 1000))
       toast({
         title: "¡Invitación enviada!",
         description: `Se ha enviado un correo a ${studentToInvite.name}.`,
@@ -107,6 +307,45 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     }
   }
 
+  // FUNCIÓN AL COMPLETAR ACTIVIDAD O QUIZ (Integrado con backend /nota/addNota)
+  const handleActivityComplete = async (activity: Activity, attemptData?: QuizAttempt) => {
+    if (activity.type === 'quiz' && attemptData) {
+      const evaluationId = activity.backendEvaluationId;
+      if (evaluationId) {
+        try {
+          // Registrar la nota en el backend real
+          await fetchApi('/nota/addNota', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              evaluacionCuNota: evaluationId,
+              estudianteNota: parseInt(user?.id || '1'),
+              notaNota: attemptData.score,
+              observacionNota: `Nota obtenida en el intento ${attemptData.attemptNumber} desde la plataforma Next.js.`
+            })
+          });
+          
+          toast({
+            title: "¡Quiz calificado en el Backend!",
+            description: `Tu nota de ${attemptData.score} pts ha sido guardada con éxito.`,
+            className: "bg-success text-success-foreground border-none"
+          });
+        } catch (err) {
+          console.error("Error guardando nota en el backend:", err);
+          toast({
+            title: "Error de Guardado",
+            description: "La nota se calculó localmente pero no se pudo sincronizar al backend.",
+            variant: "destructive"
+          });
+        }
+      }
+    }
+    
+    // Forzar recarga de datos
+    setTick(t => t + 1);
+    setActiveActivity(null);
+  }
+
   if (activeActivity) {
     return (
       <div className="min-h-screen p-8">
@@ -115,21 +354,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </Button>
         {activeActivity.type === 'quiz' ? (
           <QuizViewer activity={activeActivity} onComplete={(attemptData: QuizAttempt) => {
-              if (attemptData.score >= (activeActivity.quiz?.passingScore || 12)) {
-                activeActivity.isApproved = true; 
-                activeActivity.status = 'completed'; 
-                activeActivity.bestAttemptScore = attemptData.score; 
-                completeActivity(course.id, activeActivity.id)
-              }
-              if (!activeActivity.attempts) activeActivity.attempts = []
-              activeActivity.attempts.push(attemptData); 
-              setTick(t => t + 1)
+              handleActivityComplete(activeActivity, attemptData);
             }} />
         ) : (
           <ActivityViewer activity={activeActivity} onComplete={() => { 
-            completeActivity(course.id, activeActivity.id); 
-            setActiveActivity(null); 
-            setTick(t => t + 1) 
+            handleActivityComplete(activeActivity);
           }} />
         )}
       </div>
@@ -169,11 +398,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-primary/10 p-2"><BookOpen className="size-5 text-primary" /></div><div><p className="text-sm text-muted-foreground">Actividades</p><p className="text-xl font-bold">{course.completedActivities}/{course.totalActivities}</p></div></CardContent></Card>
         <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-success/10 p-2"><CheckCircle2 className="size-5 text-success" /></div><div><p className="text-sm text-muted-foreground">Completadas</p><p className="text-xl font-bold">{completedActivities.length}</p></div></CardContent></Card>
-        <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-gold/10 p-2"><Trophy className="size-5 text-gold" /></div><div><p className="text-sm text-muted-foreground">Puntos</p><p className="text-xl font-bold">{earnedPoints}/{totalPoints}</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-gold/10 p-2"><Trophy className="size-5 text-gold" /></div><div><p className="text-sm text-muted-foreground">Puntos acumulados</p><p className="text-xl font-bold">{earnedPoints}/{totalPoints}</p></div></CardContent></Card>
         <Card><CardContent className="flex items-center gap-4 p-4"><div className="rounded-lg bg-muted p-2"><Clock className="size-5 text-muted-foreground" /></div><div><p className="text-sm text-muted-foreground">Duración total</p><p className="text-xl font-bold">{totalDuration} min</p></div></CardContent></Card>
       </div>
 
-      {/* TABS ACTUALIZADOS A 3 COLUMNAS */}
       <Tabs defaultValue="temario" className="space-y-6">
         <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="temario">Temario por Semana</TabsTrigger>
@@ -182,21 +410,37 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </TabsList>
 
         <TabsContent value="temario" className="space-y-8">
-          <WeeklyActivities activities={course.activities} onActivityStart={(activity) => setActiveActivity(activity)} />
+          {activities.length > 0 ? (
+            <WeeklyActivities activities={activities} onActivityStart={(activity) => setActiveActivity(activity)} />
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-16 text-center">
+              <BookOpen className="size-12 text-muted-foreground/50" />
+              <h3 className="mt-4 text-lg font-semibold">No hay materiales cargados aún</h3>
+              <p className="mt-2 text-muted-foreground">
+                El docente no ha subido recursos para este curso en la base de datos.
+              </p>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="ranking">
           <div className="grid gap-6 md:grid-cols-3 items-start">
             <div className="md:col-span-2">
-              <MiniRanking
-                ranking={courseRanking}
-                currentUserId={currentUserRanking?.id || ''}
-                limit={courseRanking.length}
-                title="Ranking del Curso"
-                showFooter={false}
-                showInviteButton={true}
-                onInvite={openInviteModal}
-              />
+              {courseRanking.length > 0 ? (
+                <MiniRanking
+                  ranking={courseRanking}
+                  currentUserId={user?.id || ''}
+                  limit={courseRanking.length}
+                  title="Ranking del Curso"
+                  showFooter={false}
+                  showInviteButton={true}
+                  onInvite={openInviteModal}
+                />
+              ) : (
+                <div className="py-8 text-center text-muted-foreground border rounded-lg">
+                  Ningún estudiante registrado en el curso aún.
+                </div>
+              )}
             </div>
             <div className="md:col-span-1">
               <Card className="sticky top-8">
@@ -207,8 +451,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                     <div><p className="font-semibold">Posición en el curso</p><p className="text-sm text-muted-foreground">De {courseRanking.length} estudiantes</p></div>
                   </div>
                   <div className="space-y-2 border-t pt-4">
-                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tus puntos:</span><span className="font-bold text-primary">{currentUserRanking?.points.toLocaleString('en-US')} pts</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Nivel actual:</span><span className="font-bold">{currentUserRanking?.level}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tus puntos:</span><span className="font-bold text-primary">{(currentUserRanking?.points || 0).toLocaleString('en-US')} pts</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Nivel actual:</span><span className="font-bold">{currentUserRanking?.level || "Bronce"}</span></div>
                   </div>
                 </CardContent>
               </Card>
@@ -216,14 +460,14 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           </div>
         </TabsContent>
 
-        {/* NUEVA PESTAÑA: COMPAÑEROS */}
+        {/* COMPAÑEROS */}
         <TabsContent value="companeros">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users className="size-5 text-primary" />
-                  Compañeros de Clase ({courseStudents.length - 1})
+                  Compañeros de Clase ({Math.max(0, courseStudents.length - 1)})
                 </div>
               </CardTitle>
             </CardHeader>
@@ -263,7 +507,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   ))
                 ) : (
                   <div className="col-span-full py-8 text-center text-muted-foreground">
-                    No se encontraron compañeros con ese nombre.
+                    No se encontraron compañeros de clase.
                   </div>
                 )}
               </div>

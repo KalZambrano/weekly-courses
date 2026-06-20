@@ -2,6 +2,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { fetchApi } from '@/lib/api';
 
 type UserRole = 'student' | 'teacher' | null;
 
@@ -10,6 +11,7 @@ interface User {
   role: UserRole;
   name: string;
   token?: string;
+  id?: string;
 }
 
 interface AuthContextType {
@@ -85,13 +87,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     try {
-      // ATENCIÓN: Cambia el puerto 8080 por el puerto de tu API Gateway
-      // Si tu Gateway exige un prefijo (ej. /api/seguridad/auth...), modifícalo aquí.
-      const response = await fetch('http://localhost:8089/auth/loginAsistente', {
+      // ATENCIÓN: Usando fetchApi en lugar de fetch directo para usar la configuración centralizada
+      const data = await fetchApi('/auth/loginAsistente', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         // Mapeamos lo que recibe React a lo que espera Spring Boot
         body: JSON.stringify({
           dni: emailOrDni,
@@ -99,22 +97,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json(); // { mensaje: "...", token: "..." }
-
-        if (data.token) {
+      if (data && data.token) {
           // Decodificamos el token para sacar el rol y el DNI
           const decodedToken = decodeJWT(data.token);
 
           // Mapeamos los roles de Spring Boot a los de Next.js
           // Si es ADMIN lo hacemos teacher, si no, student.
           const frontendRole: UserRole = decodedToken?.role === 'ADMIN' ? 'teacher' : 'student';
+          const dni = decodedToken?.sub || emailOrDni;
+
+          let name = `Usuario ${dni}`;
+          let id = dni;
+
+          if (frontendRole === 'student') {
+            try {
+              const studentData = await fetchApi(`/estudiante/findEstudianteByDni/${dni}`, {
+                headers: { 'Authorization': `Bearer ${data.token}` }
+              });
+              if (studentData && studentData.idEstudiante) {
+                name = `${studentData.nombreEstudiante} ${studentData.apellidoEstudiante}`;
+                id = studentData.idEstudiante.toString();
+              } else {
+                console.warn("Student profile returned null or empty:", studentData);
+              }
+            } catch (e) {
+              console.error("Error fetching student profile from backend:", e);
+            }
+          } else if (frontendRole === 'teacher') {
+            try {
+              const assistantData = await fetchApi(`/asistente/findAsistenteByDni/${dni}`, {
+                headers: { 'Authorization': `Bearer ${data.token}` }
+              });
+              if (assistantData) {
+                name = `${assistantData.nombreUsuario} ${assistantData.apellidoUsuario}`;
+                id = assistantData.idUsuario.toString();
+              }
+            } catch (e) {
+              console.error("Error fetching assistant profile from backend:", e);
+            }
+          }
 
           const userData: User = {
-            email: decodedToken?.sub || emailOrDni, // El subject del token es el DNI
+            email: dni,
             role: frontendRole,
-            name: `Usuario ${decodedToken?.sub || ''}`, // Temporal hasta tener endpoint de perfil
-            token: data.token
+            name: name,
+            token: data.token,
+            id: id
           };
 
           localStorage.setItem('isLoggedIn', 'true');
@@ -125,7 +153,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(userData);
           return true;
         }
-      }
+
       return false;
     } catch (error) {
       console.error('Error de conexión con el backend:', error);

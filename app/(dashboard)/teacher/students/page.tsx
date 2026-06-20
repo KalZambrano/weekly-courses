@@ -1,7 +1,8 @@
-//weekly-courses/app/(dashboard)/teacher/students/page.tsx
 'use client'
+import { toast } from 'sonner'
+//weekly-courses/app/(dashboard)/teacher/students/page.tsx
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -9,12 +10,23 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { LevelBadge } from '@/components/custom/level-badge'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { allStudents, courses } from '@/data/mock-data'
-import { getActivityTypeInfo } from '@/lib/gamification'
+import { fetchApi } from '@/lib/api' // <-- Importamos nuestro interceptor
 import {
   Search,
+  Trash2,
+  Pencil,
   Filter,
   Users,
   Mail,
@@ -22,7 +34,8 @@ import {
   Flame,
   TrendingUp,
   CheckCircle2,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react'
 import {
   Select,
@@ -38,8 +51,165 @@ export default function TeacherStudentsPage() {
   const [levelFilter, setLevelFilter] = useState<'all' | 'Oro' | 'Plata' | 'Bronce'>('all')
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null)
 
-  // TODO: BACKEND - Aquí harás un fetch a tu Estudiante-Server para traer la lista real
-  const filteredStudents = allStudents.filter(student => {
+  // ESTADOS PARA LA HU-10 (Notas del Backend)
+  const [notasReales, setNotasReales] = useState<any[]>([])
+  const [cargandoNotas, setCargandoNotas] = useState(false)
+
+  const [students, setStudents] = useState<any[]>([])
+
+  // Form: Editar Estudiante
+  const [tick, setTick] = useState(0)
+  const [isEditStudentOpen, setIsEditStudentOpen] = useState(false)
+  const [editStudentId, setEditStudentId] = useState<string | null>(null)
+  const [editStudentNombre, setEditStudentNombre] = useState('')
+  const [editStudentApellido, setEditStudentApellido] = useState('')
+  const [editStudentEmail, setEditStudentEmail] = useState('')
+  const [editStudentPass, setEditStudentPass] = useState('')
+  const [updatingStudent, setUpdatingStudent] = useState(false)
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editStudentId || !editStudentNombre.trim() || !editStudentApellido.trim() || !editStudentEmail.trim()) return
+    setUpdatingStudent(true)
+
+    try {
+      await fetchApi(`/estudiante/updateEstudiante/${editStudentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombreEstudiante: editStudentNombre,
+          apellidoEstudiante: editStudentApellido,
+          correoEstudiante: editStudentEmail,
+          contrasenaEstudiante: editStudentPass
+        })
+      })
+
+      toast.success("¡Estudiante Actualizado!", {
+        description: `Los datos de ${editStudentNombre} han sido modificados con éxito.`,
+      })
+
+      setIsEditStudentOpen(false)
+      setTick(t => t + 1)
+    } catch (err) {
+      toast.error("Error al Actualizar", {
+        description: "Hubo un error al modificar el estudiante en el servidor."
+      })
+    } finally {
+      setUpdatingStudent(false)
+    }
+  }
+
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!window.confirm("¿Estás seguro de eliminar este estudiante de la plataforma?")) return
+    
+    try {
+      await fetchApi(`/estudiante/deleteEstudiante/${studentId}`, {
+        method: 'DELETE'
+      })
+
+      toast.success("¡Estudiante Eliminado!", {
+        description: `El estudiante ha sido borrado con éxito.`,
+      })
+
+      setSelectedStudent(null)
+      setTick(t => t + 1)
+    } catch (err) {
+      toast.error("Error al Eliminar", {
+        description: "Hubo un error al eliminar el estudiante en el servidor."
+      })
+    }
+  }
+
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        const [allSts, allEnrollments, allAssignments, allCourses] = await Promise.all([
+          fetchApi('/estudiante/listEstudiantes').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/inscripcion/listInscripciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/asignacion/listAsignacion').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/curso/listCurso').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          })
+        ]);
+
+        const mapped = allSts.map((s: any) => {
+          const studentEnrollments = allEnrollments.filter((e: any) => e.estudianteIdInscripcion === s.idEstudiante);
+          const totalPoints = studentEnrollments.reduce((sum: number, e: any) => sum + (e.totalPuntosInscripcion || 0), 0);
+
+          let level: "Bronce" | "Plata" | "Oro" = "Bronce";
+          if (totalPoints >= 3000) level = "Oro";
+          else if (totalPoints >= 2000) level = "Plata";
+
+          const studentCourses = studentEnrollments.map((enrollment: any) => {
+            const assignment = allAssignments.find((a: any) => a.idAsignacion === enrollment.asignacionIdInscripcion);
+            if (!assignment) return null;
+            const course = allCourses.find((c: any) => c.idCurso === assignment.cursoIdAsignacion);
+            if (!course) return null;
+
+            const progress = enrollment.totalPuntosInscripcion > 0 ? Math.min(100, enrollment.totalPuntosInscripcion) : 0;
+            
+            // Map icon based on name
+            const lowerName = course.nombreCurso.toLowerCase();
+            let icon = '📚';
+            if (lowerName.includes('mat')) icon = '📐';
+            else if (lowerName.includes('fis') || lowerName.includes('phy')) icon = '⚡';
+            else if (lowerName.includes('qui') || lowerName.includes('chem')) icon = '🧪';
+            else if (lowerName.includes('prog') || lowerName.includes('code')) icon = '💻';
+
+            return {
+              id: course.idCurso.toString(),
+              name: course.nombreCurso,
+              icon: icon,
+              progress: progress,
+              enrollmentId: enrollment.idInscripcion
+            };
+          }).filter(Boolean);
+
+          const progress = studentCourses.length > 0 
+            ? Math.round(studentCourses.reduce((sum: number, c: any) => sum + c.progress, 0) / studentCourses.length)
+            : 0;
+
+          return {
+            id: s.idEstudiante.toString(),
+            name: `${s.nombreEstudiante} ${s.apellidoEstudiante}`,
+            email: s.correoEstudiante,
+            avatar: `${s.nombreEstudiante[0]}${s.apellidoEstudiante[0]}`,
+            points: totalPoints,
+            level: level,
+            progress: progress,
+            streak: 5,
+            courses: studentCourses,
+            rawNombre: s.nombreEstudiante,
+            rawApellido: s.apellidoEstudiante,
+            rawPass: s.contrasenaEstudiante
+          };
+        });
+
+        setStudents(mapped);
+      } catch (err) {
+        console.error("Error loading teacher students page data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [tick]);
+
+  const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.email.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesLevel = levelFilter === 'all' || student.level === levelFilter
@@ -47,13 +217,39 @@ export default function TeacherStudentsPage() {
   })
 
   const selectedStudentData = selectedStudent
-    ? allStudents.find(s => s.id === selectedStudent)
+    ? students.find(s => s.id === selectedStudent)
     : null
 
-  // TODO: BACKEND - Aquí harás un fetch a tu Nota_Evaluacion-Server pasando el DNI del alumno
-  const studentCourses = selectedStudentData
-    ? courses.filter(c => selectedStudentData.enrolledCourses.includes(c.id))
-    : []
+  const studentCourses = selectedStudentData?.courses || []
+
+  // EFECTO PARA TRAER LAS NOTAS DEL BACKEND CUANDO SE SELECCIONA UN ALUMNO
+  useEffect(() => {
+    if (selectedStudentData) {
+      const fetchNotasDelBackend = async () => {
+        setCargandoNotas(true)
+        try {
+          // Llamamos al endpoint usando el ID del estudiante (como lo configuraste en Spring Boot)
+          const data = await fetchApi(`/nota/findNotasByEstudiante/${selectedStudentData.id}`)
+          setNotasReales(data)
+        } catch (error) {
+          console.log("Endpoint de notas aún no disponible o falló.")
+          setNotasReales([])
+        } finally {
+          setCargandoNotas(false)
+        }
+      }
+      fetchNotasDelBackend()
+    }
+  }, [selectedStudentData])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Cargando gestión de estudiantes...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen p-8">
@@ -151,7 +347,22 @@ export default function TeacherStudentsPage() {
         <div>
           {selectedStudentData ? (
             <Card className="sticky top-8">
-              <CardHeader className="text-center pb-2">
+              <CardHeader className="text-center pb-2 relative">
+                <div className="absolute top-4 right-4 flex gap-2">
+                   <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => {
+                     setEditStudentId(selectedStudentData.id);
+                     setEditStudentNombre(selectedStudentData.rawNombre);
+                     setEditStudentApellido(selectedStudentData.rawApellido);
+                     setEditStudentEmail(selectedStudentData.email);
+                     setEditStudentPass(selectedStudentData.rawPass);
+                     setIsEditStudentOpen(true);
+                   }}>
+                     <Pencil className="size-4" />
+                   </Button>
+                   <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteStudent(selectedStudentData.id)}>
+                     <Trash2 className="size-4" />
+                   </Button>
+                </div>
                 <Avatar className="mx-auto size-20 border-4 border-primary/20">
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                     {selectedStudentData.avatar}
@@ -212,7 +423,7 @@ export default function TeacherStudentsPage() {
                   </h4>
 
                   <Accordion type="single" collapsible className="w-full space-y-2">
-                    {studentCourses.map((course) => (
+                    {studentCourses.map((course: any) => (
                       <AccordionItem key={course.id} value={course.id} className="border rounded-lg px-3 bg-background">
                         <AccordionTrigger className="hover:no-underline py-3">
                           <div className="flex items-center gap-3 w-full pr-4">
@@ -237,42 +448,48 @@ export default function TeacherStudentsPage() {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {/* Mostramos solo las primeras 15 actividades para no saturar la UI */}
-                                {course.activities.slice(0, 15).map((activity) => {
-                                  const typeInfo = getActivityTypeInfo(activity.type)
-                                  return (
-                                    <TableRow key={activity.id}>
-                                      <TableCell className="py-2">
-                                        <div className="flex items-center gap-2">
-                                          {activity.status === 'completed' ? (
+                                {cargandoNotas ? (
+                                  <TableRow>
+                                    <TableCell colSpan={2} className="text-center py-4 text-muted-foreground text-xs">
+                                      Cargando notas desde el servidor...
+                                    </TableCell>
+                                  </TableRow>
+                                ) : (() => {
+                                  const courseNotes = notasReales.filter((n: any) => 
+                                    n.evaluacionCuNota?.inscripcionEsCuEvaluacion?.idInscripcion === course.enrollmentId
+                                  );
+                                  return courseNotes.length > 0 ? (
+                                    // RENDERIZAMOS DATOS REALES DEL BACKEND FILTRADOS POR CURSO
+                                    courseNotes.map((notaBackend, index) => (
+                                      <TableRow key={index}>
+                                        <TableCell className="py-2">
+                                          <div className="flex items-center gap-2">
                                             <CheckCircle2 className="size-3 text-success shrink-0" />
-                                          ) : (
-                                            <Clock className="size-3 text-muted-foreground shrink-0" />
-                                          )}
-                                          <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-medium truncate max-w-[140px]" title={activity.name}>
-                                              {activity.name}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground">
-                                              {typeInfo.label}
-                                            </span>
+                                            <div className="flex flex-col min-w-0">
+                                              <span className="text-xs font-medium truncate max-w-[140px]" title={notaBackend.evaluacionCuNota?.tituloEvaluacion}>
+                                                {notaBackend.evaluacionCuNota?.tituloEvaluacion || 'Evaluación'}
+                                              </span>
+                                              <span className="text-[10px] text-muted-foreground">
+                                                {notaBackend.evaluacionCuNota?.materialCuEvaluacion?.tipoMaterial || 'Actividad'}
+                                              </span>
+                                            </div>
                                           </div>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="py-2 text-right">
-                                        {activity.status === 'completed' ? (
+                                        </TableCell>
+                                        <TableCell className="py-2 text-right">
                                           <Badge variant="secondary" className="bg-success/10 text-success hover:bg-success/20 border-none text-[10px]">
-                                            {activity.type === 'quiz' && activity.bestAttemptScore !== undefined
-                                              ? `${activity.bestAttemptScore}/${activity.quiz?.passingScore || 20} pts`
-                                              : `+${activity.points} pts`}
+                                            {notaBackend.notaNota} pts
                                           </Badge>
-                                        ) : (
-                                          <span className="text-xs text-muted-foreground">-</span>
-                                        )}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))
+                                  ) : (
+                                    <TableRow>
+                                      <TableCell colSpan={2} className="text-center py-4 text-muted-foreground text-xs">
+                                        No hay notas registradas para este curso.
                                       </TableCell>
                                     </TableRow>
-                                  )
-                                })}
+                                  );
+                                })()}
                               </TableBody>
                             </Table>
                           </div>
@@ -296,6 +513,66 @@ export default function TeacherStudentsPage() {
           )}
         </div>
       </div>
+
+      {/* MODAL: EDITAR ESTUDIANTE */}
+      <Dialog open={isEditStudentOpen} onOpenChange={setIsEditStudentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Estudiante</DialogTitle>
+            <DialogDescription>
+              Modifica los datos personales y de acceso del estudiante.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateStudent} className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editStuNombre">Nombre</Label>
+                <Input
+                  id="editStuNombre"
+                  value={editStudentNombre}
+                  onChange={(e) => setEditStudentNombre(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editStuApellido">Apellido</Label>
+                <Input
+                  id="editStuApellido"
+                  value={editStudentApellido}
+                  onChange={(e) => setEditStudentApellido(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editStuEmail">Correo Electrónico</Label>
+              <Input
+                id="editStuEmail"
+                type="email"
+                value={editStudentEmail}
+                onChange={(e) => setEditStudentEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editStuPass">Contraseña</Label>
+              <Input
+                id="editStuPass"
+                type="text"
+                value={editStudentPass}
+                onChange={(e) => setEditStudentPass(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={updatingStudent}>
+                {updatingStudent ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Guardar Cambios"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

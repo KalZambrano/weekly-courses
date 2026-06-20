@@ -1,12 +1,16 @@
 'use client'
+import { toast } from 'sonner'
+//weekly-courses/app/(dashboard)/student/courses/page.tsx
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/context/AuthContext'
+import { fetchApi } from '@/lib/api'
+import { courses as mockCourses } from '@/data/mock-data'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { CourseCard } from '@/components/custom/course-card'
 import { PointsSystemInfo } from '@/components/custom/points-system-info'
-import { courses, currentStudent } from '@/data/mock-data'
-import { Search, BookOpen, Filter } from 'lucide-react'
+import { Search, BookOpen, Filter, Loader2 } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -16,12 +20,81 @@ import {
 } from '@/components/ui/select'
 
 export default function CoursesPage() {
+  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed'>('all')
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   
-  const enrolledCourses = courses.filter(c => 
-    currentStudent.enrolledCourses.includes(c.id)
-  )
+  useEffect(() => {
+    if (!user) return
+
+    const loadCoursesData = async () => {
+      try {
+        if (!user.id) {
+          throw new Error("No user ID found, using fallback courses.");
+        }
+        const studentId = parseInt(user.id)
+        
+        // Fetch enrollments, assignments, and courses
+        const [allEnrollments, allAssignments, allCourses] = await Promise.all([
+          fetchApi('/inscripcion/listInscripciones').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/asignacion/listAsignacion').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          }),
+          fetchApi('/curso/listCurso').catch((e) => {
+            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
+            return []
+          })
+        ]);
+
+        // Filter enrollments for this student
+        const myEnrollments = allEnrollments.filter((e: any) => e.estudianteIdInscripcion === studentId);
+
+        // Map to course details
+        const mappedCourses = myEnrollments.map((enrollment: any) => {
+          const assignment = allAssignments.find((a: any) => a.idAsignacion === enrollment.asignacionIdInscripcion);
+          if (!assignment) return null;
+          const course = allCourses.find((c: any) => c.idCurso === assignment.cursoIdAsignacion);
+          if (!course) return null;
+
+          const progress = enrollment.totalPuntosInscripcion > 0 ? Math.min(100, enrollment.totalPuntosInscripcion) : 0;
+          
+          return {
+            id: course.idCurso.toString(),
+            name: course.nombreCurso,
+            description: course.descripcionCurso,
+            progress: progress,
+            activitiesCount: 12,
+            completedCount: progress >= 100 ? 12 : Math.round((progress / 100) * 12),
+            color: "indigo"
+          };
+        }).filter((c: any) => c !== null);
+
+        setEnrolledCourses(mappedCourses);
+      } catch (err) {
+        console.error("Error loading student courses, using mock data:", err);
+        setEnrolledCourses(mockCourses);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCoursesData();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Cargando tus cursos...</span>
+      </div>
+    )
+  }
   
   const filteredCourses = enrolledCourses.filter(course => {
     const matchesSearch = course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -125,9 +198,9 @@ export default function CoursesPage() {
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-16 text-center">
           <BookOpen className="size-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-semibold">No se encontraron cursos</h3>
+          <h3 className="mt-4 text-lg font-semibold">No tienes cursos inscritos aún</h3>
           <p className="mt-2 text-muted-foreground">
-            Intenta ajustar los filtros o la búsqueda
+            Comunícate con tu profesor o administrador para inscribirte en un curso.
           </p>
         </div>
       )}
