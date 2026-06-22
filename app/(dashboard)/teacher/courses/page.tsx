@@ -1,16 +1,34 @@
-'use client'
-import { toast } from 'sonner'
+"use client";
+import { toast } from "sonner";
 //weekly-courses/app/(dashboard)/teacher/courses/page.tsx
 
-import { useAuth } from '@/context/AuthContext'
-import { useState, useEffect } from 'react'
-import { fetchApi } from '@/lib/api'
-import { useToast } from '@/hooks/use-toast'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { LevelBadge } from '@/components/custom/level-badge'
+import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react";
+import { fetchApi } from "@/lib/api";
+import { config } from "@/lib/config-api";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LevelBadge } from "@/components/custom/level-badge";
+import {
+  getAllCourses,
+  getAllEvaluations,
+  getAllEnrollments,
+  getAllMaterials,
+  getAllStudents,
+  getAllAssignments,
+  getAllGrades,
+  handleDeleteCourse,
+  handleDeleteMaterial,
+} from "@/services/services";
 import {
   Dialog,
   DialogContent,
@@ -18,15 +36,28 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import {
   BookOpen,
   Users,
@@ -43,107 +74,110 @@ import {
   Sparkles,
   ArrowRight,
   BrainCircuit,
-  AlertCircle
-} from 'lucide-react'
+  AlertCircle,
+} from "lucide-react";
 
 interface Question {
-  question: string
-  options: string[]
-  correctAnswer: number
-  explanation: string
-  topic: string
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
+  topic: string;
 }
 
 export default function TeacherCoursesPage() {
-  const { user } = useAuth()
-  const { toast } = useToast()
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const [loading, setLoading] = useState(true)
-  const [courses, setCourses] = useState<any[]>([])
-  const [allAssignments, setAllAssignments] = useState<any[]>([])
-  const [allMaterials, setAllMaterials] = useState<any[]>([])
-  const [allEvaluations, setAllEvaluations] = useState<any[]>([])
-  const [allStudents, setAllStudents] = useState<any[]>([])
-  const [allEnrollments, setAllEnrollments] = useState<any[]>([])
-  const [allGrades, setAllGrades] = useState<any[]>([])
-  const [tick, setTick] = useState(0)
+  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [allAssignments, setAllAssignments] = useState<any[]>([]);
+  const [allMaterials, setAllMaterials] = useState<any[]>([]);
+  const [allEvaluations, setAllEvaluations] = useState<any[]>([]);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [allEnrollments, setAllEnrollments] = useState<any[]>([]);
+  const [allGrades, setAllGrades] = useState<any[]>([]);
+  const [tick, setTick] = useState(0);
 
   // Modales
-  const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false)
-  const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false)
-  const [isCreateQuizOpen, setIsCreateQuizOpen] = useState(false)
-  const [isViewGradesOpen, setIsViewGradesOpen] = useState(false)
+  const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false);
+  const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
+  const [isCreateQuizOpen, setIsCreateQuizOpen] = useState(false);
+  const [isViewGradesOpen, setIsViewGradesOpen] = useState(false);
 
   // Datos para Formularios
-  const [selectedCourse, setSelectedCourse] = useState<any>(null)
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
 
   // Form: Crear Curso
-  const [newCourseName, setNewCourseName] = useState('')
-  const [newCourseDesc, setNewCourseDesc] = useState('')
-  const [newCourseCredits, setNewCourseCredits] = useState(4)
-  const [submittingCourse, setSubmittingCourse] = useState(false)
+  const [newCourseName, setNewCourseName] = useState("");
+  const [newCourseDesc, setNewCourseDesc] = useState("");
+  const [newCourseCredits, setNewCourseCredits] = useState(4);
+  const [submittingCourse, setSubmittingCourse] = useState(false);
   // Form: Editar Curso
-  const [isEditCourseOpen, setIsEditCourseOpen] = useState(false)
-  const [editCourseId, setEditCourseId] = useState<number | null>(null)
-  const [editCourseName, setEditCourseName] = useState('')
-  const [editCourseDesc, setEditCourseDesc] = useState('')
-  const [editCourseCredits, setEditCourseCredits] = useState(4)
-  const [updatingCourse, setUpdatingCourse] = useState(false)
-
+  const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
+  const [editCourseId, setEditCourseId] = useState<number | null>(null);
+  const [editCourseName, setEditCourseName] = useState("");
+  const [editCourseDesc, setEditCourseDesc] = useState("");
+  const [editCourseCredits, setEditCourseCredits] = useState(4);
+  const [updatingCourse, setUpdatingCourse] = useState(false);
 
   // Form: Agregar Material
-  const [materialTitle, setMaterialTitle] = useState('')
-  const [materialDesc, setMaterialDesc] = useState('')
-  const [materialType, setMaterialType] = useState('PDF')
-  const [materialUrl, setMaterialUrl] = useState('')
-  const [submittingMaterial, setSubmittingMaterial] = useState(false)
+  const [materialTitle, setMaterialTitle] = useState("");
+  const [materialDesc, setMaterialDesc] = useState("");
+  const [materialType, setMaterialType] = useState("PDF");
+  const [materialUrl, setMaterialUrl] = useState("");
+  const [submittingMaterial, setSubmittingMaterial] = useState(false);
 
   // Form: Editar Material
-  const [isEditMaterialOpen, setIsEditMaterialOpen] = useState(false)
-  const [editMaterialId, setEditMaterialId] = useState<number | null>(null)
-  const [editMaterialTitle, setEditMaterialTitle] = useState('')
-  const [editMaterialDesc, setEditMaterialDesc] = useState('')
-  const [editMaterialType, setEditMaterialType] = useState('PDF')
-  const [editMaterialUrl, setEditMaterialUrl] = useState('')
-  const [editMaterialAsignacionId, setEditMaterialAsignacionId] = useState<number | null>(null)
-  const [updatingMaterial, setUpdatingMaterial] = useState(false)
-
+  const [isEditMaterialOpen, setIsEditMaterialOpen] = useState(false);
+  const [editMaterialId, setEditMaterialId] = useState<number | null>(null);
+  const [editMaterialTitle, setEditMaterialTitle] = useState("");
+  const [editMaterialDesc, setEditMaterialDesc] = useState("");
+  const [editMaterialType, setEditMaterialType] = useState("PDF");
+  const [editMaterialUrl, setEditMaterialUrl] = useState("");
+  const [editMaterialAsignacionId, setEditMaterialAsignacionId] = useState<
+    number | null
+  >(null);
+  const [updatingMaterial, setUpdatingMaterial] = useState(false);
 
   // Form: Creador Visual de Quiz
-  const [quizTitle, setQuizTitle] = useState('')
-  const [quizWeight, setQuizWeight] = useState(20)
-  const [quizPoints, setQuizPoints] = useState(20)
+  const [quizTitle, setQuizTitle] = useState("");
+  const [quizWeight, setQuizWeight] = useState(20);
+  const [quizPoints, setQuizPoints] = useState(20);
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([
     {
-      question: '',
-      options: ['', '', '', ''],
+      question: "",
+      options: ["", "", "", ""],
       correctAnswer: 0,
-      explanation: '',
-      topic: ''
-    }
-  ])
-  const [submittingQuiz, setSubmittingQuiz] = useState(false)
+      explanation: "",
+      topic: "",
+    },
+  ]);
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
 
   // Grados cargados en modal
-  const [gradesForCourse, setGradesForCourse] = useState<any[]>([])
+  const [gradesForCourse, setGradesForCourse] = useState<any[]>([]);
 
   // Form: Editar Nota
-  const [isEditGradeOpen, setIsEditGradeOpen] = useState(false)
-  const [editGradeId, setEditGradeId] = useState<number | null>(null)
-  const [editGradeValue, setEditGradeValue] = useState<number>(0)
-  const [editGradeObs, setEditGradeObs] = useState('')
-  const [editGradeEstudiante, setEditGradeEstudiante] = useState<number | null>(null)
-  const [editGradeEvaluacion, setEditGradeEvaluacion] = useState<number | null>(null)
-  const [updatingGrade, setUpdatingGrade] = useState(false)
-
+  const [isEditGradeOpen, setIsEditGradeOpen] = useState(false);
+  const [editGradeId, setEditGradeId] = useState<number | null>(null);
+  const [editGradeValue, setEditGradeValue] = useState<number>(0);
+  const [editGradeObs, setEditGradeObs] = useState("");
+  const [editGradeEstudiante, setEditGradeEstudiante] = useState<number | null>(
+    null,
+  );
+  const [editGradeEvaluacion, setEditGradeEvaluacion] = useState<number | null>(
+    null,
+  );
+  const [updatingGrade, setUpdatingGrade] = useState(false);
 
   useEffect(() => {
-    if (!user || !user.id) return
+    if (!user || !user.id) return;
 
     const loadBackendData = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const teacherId = parseInt(user.id || '0')
+        const teacherId = parseInt(user.id || "0");
         const [
           rawCourses,
           rawAssignments,
@@ -151,568 +185,561 @@ export default function TeacherCoursesPage() {
           rawEvaluations,
           rawStudents,
           rawEnrollments,
-          rawGrades
+          rawGrades,
         ] = await Promise.all([
-          fetchApi('/curso/listCurso').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/asignacion/listAsignacion').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/material/listMaterial').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/evaluacion/listEvaluaciones').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/estudiante/listEstudiantes').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/inscripcion/listInscripciones').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/nota/listNotas').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          })
-        ])
+          getAllCourses(),
+          getAllAssignments(),
+          getAllMaterials(),
+          getAllEvaluations(),
+          getAllStudents(),
+          getAllEnrollments(),
+          getAllGrades(),
+        ]);
 
-        setAllAssignments(rawAssignments)
-        setAllMaterials(rawMaterials)
-        setAllEvaluations(rawEvaluations)
-        setAllStudents(rawStudents)
-        setAllEnrollments(rawEnrollments)
-        setAllGrades(rawGrades)
+        setAllAssignments(rawAssignments);
+        setAllMaterials(rawMaterials);
+        setAllEvaluations(rawEvaluations);
+        setAllStudents(rawStudents);
+        setAllEnrollments(rawEnrollments);
+        setAllGrades(rawGrades);
 
         // Filtrar asignaciones de este profesor
-        const myAssignments = rawAssignments.filter((a: any) => a.asistenteIdAsignacion === teacherId)
-        
+        const myAssignments = rawAssignments.filter(
+          (a: any) => a.asistenteIdAsignacion === teacherId,
+        );
+
         // Mapear cursos con sus estadísticas reales
-        const processedCourses = myAssignments.map((assignment: any) => {
-          const course = rawCourses.find((c: any) => c.idCurso === assignment.cursoIdAsignacion)
-          if (!course) return null
+        const processedCourses = myAssignments
+          .map((assignment: any) => {
+            const course = rawCourses.find(
+              (c: any) => c.idCurso === assignment.cursoIdAsignacion,
+            );
+            if (!course) return null;
 
-          // Estudiantes inscritos en este curso (basado en asignacionIdInscripcion)
-          const courseEnrollments = rawEnrollments.filter((e: any) => e.asignacionIdInscripcion === assignment.idAsignacion)
-          const enrolledStudents = courseEnrollments.map((e: any) => {
-            const student = rawStudents.find((s: any) => s.idEstudiante === e.estudianteIdInscripcion)
-            return student ? { ...student, points: e.totalPuntosInscripcion || 0 } : null
-          }).filter(Boolean)
+            // Estudiantes inscritos en este curso (basado en asignacionIdInscripcion)
+            const courseEnrollments = rawEnrollments.filter(
+              (e: any) => e.asignacionIdInscripcion === assignment.idAsignacion,
+            );
+            const enrolledStudents = courseEnrollments
+              .map((e: any) => {
+                const student = rawStudents.find(
+                  (s: any) => s.idEstudiante === e.estudianteIdInscripcion,
+                );
+                return student
+                  ? { ...student, points: e.totalPuntosInscripcion || 0 }
+                  : null;
+              })
+              .filter(Boolean);
 
-          // Materiales de esta asignación
-          const courseMaterials = rawMaterials.filter((m: any) => m.asignacionCuAsIdMaterial === assignment.idAsignacion)
+            // Materiales de esta asignación
+            const courseMaterials = rawMaterials.filter(
+              (m: any) =>
+                m.asignacionCuAsIdMaterial === assignment.idAsignacion,
+            );
 
-          // Evaluaciones asociadas a los materiales de este curso
-          const courseEvaluations = rawEvaluations.filter((e: any) => 
-            courseMaterials.some((m: any) => m.idMaterial === e.materialCuEvaluacion)
-          )
+            // Evaluaciones asociadas a los materiales de este curso
+            const courseEvaluations = rawEvaluations.filter((e: any) =>
+              courseMaterials.some(
+                (m: any) => m.idMaterial === e.materialCuEvaluacion,
+              ),
+            );
 
-          // Calcular promedio de progreso de estudiantes (puntos de inscripción)
-          const avgProgress = enrolledStudents.length > 0
-            ? Math.round(enrolledStudents.reduce((sum: number, s: any) => sum + Math.min(100, s.points), 0) / enrolledStudents.length)
-            : 0
+            // Calcular promedio de progreso de estudiantes (puntos de inscripción)
+            const avgProgress =
+              enrolledStudents.length > 0
+                ? Math.round(
+                    enrolledStudents.reduce(
+                      (sum: number, s: any) => sum + Math.min(100, s.points),
+                      0,
+                    ) / enrolledStudents.length,
+                  )
+                : 0;
 
-          // Puntos totales otorgables
-          const totalPoints = courseEvaluations.reduce((sum: number, e: any) => sum + (e.puntosEvaluacion || 0), 0)
+            // Puntos totales otorgables
+            const totalPoints = courseEvaluations.reduce(
+              (sum: number, e: any) => sum + (e.puntosEvaluacion || 0),
+              0,
+            );
 
-          // Mapear icono
-          let icon = '📚'
-          const lowerName = course.nombreCurso.toLowerCase()
-          if (lowerName.includes('mat') || lowerName.includes('algebra')) icon = '📐'
-          else if (lowerName.includes('fis') || lowerName.includes('phy')) icon = '⚡'
-          else if (lowerName.includes('qui') || lowerName.includes('chem')) icon = '🧪'
-          else if (lowerName.includes('prog') || lowerName.includes('code') || lowerName.includes('web')) icon = '💻'
+            // Mapear icono
+            let icon = "📚";
+            const lowerName = course.nombreCurso.toLowerCase();
+            if (lowerName.includes("mat") || lowerName.includes("algebra"))
+              icon = "📐";
+            else if (lowerName.includes("fis") || lowerName.includes("phy"))
+              icon = "⚡";
+            else if (lowerName.includes("qui") || lowerName.includes("chem"))
+              icon = "🧪";
+            else if (
+              lowerName.includes("prog") ||
+              lowerName.includes("code") ||
+              lowerName.includes("web")
+            )
+              icon = "💻";
 
-          return {
-            id: course.idCurso,
-            assignmentId: assignment.idAsignacion,
-            name: course.nombreCurso,
-            description: course.descripcionCurso,
-            credits: course.creditosCurso,
-            icon,
-            progress: avgProgress,
-            studentsCount: enrolledStudents.length,
-            activitiesCount: courseMaterials.length,
-            totalPoints: totalPoints || 100,
-            materials: courseMaterials,
-            evaluations: courseEvaluations,
-            students: enrolledStudents
-          }
-        }).filter(Boolean)
+            return {
+              id: course.idCurso,
+              assignmentId: assignment.idAsignacion,
+              name: course.nombreCurso,
+              description: course.descripcionCurso,
+              credits: course.creditosCurso,
+              icon,
+              progress: avgProgress,
+              studentsCount: enrolledStudents.length,
+              activitiesCount: courseMaterials.length,
+              totalPoints: totalPoints || 100,
+              materials: courseMaterials,
+              evaluations: courseEvaluations,
+              students: enrolledStudents,
+            };
+          })
+          .filter(Boolean);
 
-        setCourses(processedCourses)
+        setCourses(processedCourses);
       } catch (err) {
-        console.error("Error fetching courses data:", err)
+        console.error("Error fetching courses data:", err);
         toast({
           title: "Error de Carga",
           description: "No se pudieron obtener todos los datos del backend.",
-          variant: "destructive"
-        })
+          variant: "destructive",
+        });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadBackendData()
-  }, [user, tick])
+    loadBackendData();
+  }, [user, tick]);
 
   // SUBMIT: CREAR CURSO Y ASIGNACIÓN AUTOMÁTICA
   const handleCreateCourse = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newCourseName.trim() || !newCourseDesc.trim()) return
-    setSubmittingCourse(true)
+    e.preventDefault();
+    if (!newCourseName.trim() || !newCourseDesc.trim()) return;
+    setSubmittingCourse(true);
 
     try {
       // 1. Crear el curso
-      const courseRes = await fetchApi('/curso/addCurso', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const courseRes = await fetchApi("/curso/addCurso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombreCurso: newCourseName,
           descripcionCurso: newCourseDesc,
-          creditosCurso: newCourseCredits
-        })
-      })
+          creditosCurso: newCourseCredits,
+        }),
+      });
 
-      const courseId = courseRes?.data?.idCurso || courseRes?.idCurso
+      const courseId = courseRes?.data?.idCurso || courseRes?.idCurso;
 
       if (!courseId) {
-        throw new Error("No se pudo obtener el ID del curso recién creado.")
+        throw new Error("No se pudo obtener el ID del curso recién creado.");
       }
 
       // 2. Crear asignación al profesor actual
-      await fetchApi('/asignacion/addAsignacion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetchApi("/asignacion/addAsignacion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          asistenteIdAsignacion: parseInt(user?.id || '1'),
+          asistenteIdAsignacion: parseInt(user?.id || "1"),
           cursoIdAsignacion: courseId,
-          fechaAsignacion: new Date().toISOString().split('T')[0]
-        })
-      })
+          fechaAsignacion: new Date().toISOString().split("T")[0],
+        }),
+      });
 
       toast({
         title: "¡Curso Creado!",
         description: `El curso "${newCourseName}" ha sido creado y asignado con éxito.`,
-        className: "bg-success text-success-foreground border-none"
-      })
+        className: "bg-success text-success-foreground border-none",
+      });
 
       // Reset y recargar
-      setNewCourseName('')
-      setNewCourseDesc('')
-      setNewCourseCredits(4)
-      setIsCreateCourseOpen(false)
-      setTick(t => t + 1)
+      setNewCourseName("");
+      setNewCourseDesc("");
+      setNewCourseCredits(4);
+      setIsCreateCourseOpen(false);
+      setTick((t) => t + 1);
     } catch (err) {
-      console.error(err)
+      console.error(err);
       toast({
         title: "Error al Crear Curso",
         description: "Hubo un error al registrar el curso en el servidor.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     } finally {
-      setSubmittingCourse(false)
+      setSubmittingCourse(false);
     }
-  }
-
+  };
 
   // UPDATE: EDITAR CURSO
   const handleUpdateCourse = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editCourseId || !editCourseName.trim() || !editCourseDesc.trim()) return
-    setUpdatingCourse(true)
+    e.preventDefault();
+    if (!editCourseId || !editCourseName.trim() || !editCourseDesc.trim())
+      return;
+    setUpdatingCourse(true);
 
     try {
       await fetchApi(`/curso/updateCurso/${editCourseId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombreCurso: editCourseName,
           descripcionCurso: editCourseDesc,
-          creditosCurso: editCourseCredits
-        })
-      })
+          creditosCurso: editCourseCredits,
+        }),
+      });
 
       toast({
         title: "¡Curso Actualizado!",
         description: `El curso ha sido modificado con éxito.`,
-        className: "bg-success text-success-foreground border-none"
-      })
+        className: "bg-success text-success-foreground border-none",
+      });
 
-      setIsEditCourseOpen(false)
-      setTick(t => t + 1)
+      setIsEditCourseOpen(false);
+      setTick((t) => t + 1);
     } catch (err) {
       toast({
         title: "Error al Actualizar",
         description: "Hubo un error al modificar el curso en el servidor.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     } finally {
-      setUpdatingCourse(false)
+      setUpdatingCourse(false);
     }
-  }
-
-  // DELETE: ELIMINAR CURSO
-  const handleDeleteCourse = async (courseId: number) => {
-    if (!window.confirm("¿Estás seguro de eliminar este curso? Se eliminará de forma permanente.")) return
-    
-    try {
-      await fetchApi(`/curso/deleteCurso/${courseId}`, {
-        method: 'DELETE'
-      })
-
-      toast({
-        title: "¡Curso Eliminado!",
-        description: `El curso ha sido eliminado con éxito.`,
-        className: "bg-success text-success-foreground border-none"
-      })
-
-      setTick(t => t + 1)
-    } catch (err) {
-      toast({
-        title: "Error al Eliminar",
-        description: "Hubo un error al eliminar el curso en el servidor.",
-        variant: "destructive"
-      })
-    }
-  }
+  };
 
   // SUBMIT: AGREGAR MATERIAL A CURSO
   const handleAddMaterial = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!materialTitle.trim() || !materialDesc.trim()) return
-    setSubmittingMaterial(true)
+    e.preventDefault();
+    if (!materialTitle.trim() || !materialDesc.trim()) return;
+    setSubmittingMaterial(true);
 
     try {
-      await fetchApi('/material/addMaterial', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetchApi(config.endpoints.materialCurso.create, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           asignacionCuAsIdMaterial: selectedCourse.assignmentId,
           tituloMaterial: materialTitle,
           descripcionMaterial: materialDesc,
           tipoMaterial: materialType,
           estadoMaterial: true,
-          urlMaterial: materialUrl || '#',
-          fechaSubidaMaterial: new Date().toISOString().split('T')[0]
-        })
-      })
+          urlMaterial: materialUrl || "#",
+          fechaSubidaMaterial: new Date().toISOString().split("T")[0],
+        }),
+      });
 
       toast({
         title: "¡Material Subido!",
         description: `Se ha cargado "${materialTitle}" al curso.`,
-        className: "bg-success text-success-foreground border-none"
-      })
+        className: "bg-success text-success-foreground border-none",
+      });
 
-      setMaterialTitle('')
-      setMaterialDesc('')
-      setMaterialUrl('')
-      setIsAddMaterialOpen(false)
-      setTick(t => t + 1)
+      setMaterialTitle("");
+      setMaterialDesc("");
+      setMaterialUrl("");
+      setIsAddMaterialOpen(false);
+      setTick((t) => t + 1);
     } catch (err) {
-      console.error(err)
+      console.error(err);
       toast({
         title: "Error",
         description: "No se pudo registrar el material.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     } finally {
-      setSubmittingMaterial(false)
+      setSubmittingMaterial(false);
     }
-  }
-
+  };
 
   // UPDATE: EDITAR MATERIAL
   const handleUpdateMaterial = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editMaterialId || !editMaterialTitle.trim() || !editMaterialDesc.trim()) return
-    setUpdatingMaterial(true)
+    e.preventDefault();
+    if (
+      !editMaterialId ||
+      !editMaterialTitle.trim() ||
+      !editMaterialDesc.trim()
+    )
+      return;
+    setUpdatingMaterial(true);
 
     try {
       await fetchApi(`/material/updateMaterial/${editMaterialId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           asignacionCuAsIdMaterial: editMaterialAsignacionId,
           tituloMaterial: editMaterialTitle,
           descripcionMaterial: editMaterialDesc,
           tipoMaterial: editMaterialType,
           estadoMaterial: true,
-          urlMaterial: editMaterialUrl || '#',
-          fechaSubidaMaterial: new Date().toISOString().split('T')[0]
-        })
-      })
+          urlMaterial: editMaterialUrl || "#",
+          fechaSubidaMaterial: new Date().toISOString().split("T")[0],
+        }),
+      });
 
       toast({
         title: "¡Material Actualizado!",
         description: `El material ha sido modificado con éxito.`,
-        className: "bg-success text-success-foreground border-none"
-      })
+        className: "bg-success text-success-foreground border-none",
+      });
 
-      setIsEditMaterialOpen(false)
-      setTick(t => t + 1)
+      setIsEditMaterialOpen(false);
+      setTick((t) => t + 1);
     } catch (err) {
       toast({
         title: "Error al Actualizar",
         description: "Hubo un error al modificar el material en el servidor.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     } finally {
-      setUpdatingMaterial(false)
+      setUpdatingMaterial(false);
     }
-  }
-
-  // DELETE: ELIMINAR MATERIAL
-  const handleDeleteMaterial = async (materialId: number) => {
-    if (!window.confirm("¿Estás seguro de eliminar este material?")) return
-    
-    try {
-      await fetchApi(`/material/deleteMaterial/${materialId}`, {
-        method: 'DELETE'
-      })
-
-      toast({
-        title: "¡Material Eliminado!",
-        description: `El material ha sido eliminado con éxito.`,
-        className: "bg-success text-success-foreground border-none"
-      })
-
-      setTick(t => t + 1)
-    } catch (err) {
-      toast({
-        title: "Error al Eliminar",
-        description: "Hubo un error al eliminar el material en el servidor.",
-        variant: "destructive"
-      })
-    }
-  }
+  };
 
   // LOGICA FORM QUIZ BUILDER
   const handleAddQuestionField = () => {
     setQuizQuestions([
       ...quizQuestions,
-      { question: '', options: ['', '', '', ''], correctAnswer: 0, explanation: '', topic: '' }
-    ])
-  }
+      {
+        question: "",
+        options: ["", "", "", ""],
+        correctAnswer: 0,
+        explanation: "",
+        topic: "",
+      },
+    ]);
+  };
 
   const handleRemoveQuestionField = (index: number) => {
-    if (quizQuestions.length === 1) return
-    setQuizQuestions(quizQuestions.filter((_, idx) => idx !== index))
-  }
+    if (quizQuestions.length === 1) return;
+    setQuizQuestions(quizQuestions.filter((_, idx) => idx !== index));
+  };
 
   const handleQuestionTextChange = (index: number, val: string) => {
-    const updated = [...quizQuestions]
-    updated[index].question = val
-    setQuizQuestions(updated)
-  }
+    const updated = [...quizQuestions];
+    updated[index].question = val;
+    setQuizQuestions(updated);
+  };
 
   const handleOptionChange = (qIndex: number, oIndex: number, val: string) => {
-    const updated = [...quizQuestions]
-    updated[qIndex].options[oIndex] = val
-    setQuizQuestions(updated)
-  }
+    const updated = [...quizQuestions];
+    updated[qIndex].options[oIndex] = val;
+    setQuizQuestions(updated);
+  };
 
   const handleCorrectAnswerChange = (qIndex: number, val: number) => {
-    const updated = [...quizQuestions]
-    updated[qIndex].correctAnswer = val
-    setQuizQuestions(updated)
-  }
+    const updated = [...quizQuestions];
+    updated[qIndex].correctAnswer = val;
+    setQuizQuestions(updated);
+  };
 
   const handleExplanationChange = (qIndex: number, val: string) => {
-    const updated = [...quizQuestions]
-    updated[qIndex].explanation = val
-    setQuizQuestions(updated)
-  }
+    const updated = [...quizQuestions];
+    updated[qIndex].explanation = val;
+    setQuizQuestions(updated);
+  };
 
   const handleTopicChange = (qIndex: number, val: string) => {
-    const updated = [...quizQuestions]
-    updated[qIndex].topic = val
-    setQuizQuestions(updated)
-  }
+    const updated = [...quizQuestions];
+    updated[qIndex].topic = val;
+    setQuizQuestions(updated);
+  };
 
   // SUBMIT: CREAR QUIZ
   const handleCreateQuiz = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!quizTitle.trim()) return
-    setSubmittingQuiz(true)
+    e.preventDefault();
+    if (!quizTitle.trim()) return;
+    setSubmittingQuiz(true);
 
     try {
       // 1. Crear el material que representa al Quiz
-      const materialRes = await fetchApi('/material/addMaterial', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          asignacionCuAsIdMaterial: selectedCourse.assignmentId,
-          tituloMaterial: quizTitle,
-          descripcionMaterial: `Evaluación interactiva: ${quizQuestions.length} preguntas`,
-          tipoMaterial: 'Quiz',
-          estadoMaterial: true,
-          urlMaterial: '#',
-          fechaSubidaMaterial: new Date().toISOString().split('T')[0]
-        })
-      })
+      const materialRes = await fetchApi(
+        config.endpoints.materialCurso.create,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            asignacionCuAsIdMaterial: selectedCourse.assignmentId,
+            tituloMaterial: quizTitle,
+            descripcionMaterial: `Evaluación interactiva: ${quizQuestions.length} preguntas`,
+            tipoMaterial: "Quiz",
+            estadoMaterial: true,
+            urlMaterial: "#",
+            fechaSubidaMaterial: new Date().toISOString().split("T")[0],
+          }),
+        },
+      );
 
-      const materialId = materialRes?.idMaterial
+      const materialId = materialRes?.idMaterial;
 
       if (!materialId) {
-        throw new Error("No se pudo obtener el ID del material del Quiz.")
+        throw new Error("No se pudo obtener el ID del material del Quiz.");
       }
 
       // 2. Crear la Evaluación en el backend con las preguntas JSON
-      await fetchApi('/evaluacion/addEvaluacion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetchApi(config.endpoints.evaluacionCurso.create, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           materialCuEvaluacion: materialId,
           inscripcionEsCuEvaluacion: null, // nullable now!
           tituloEvaluacion: quizTitle,
           porcentajeEvaluacion: quizWeight,
           puntosEvaluacion: quizPoints,
-          fechaSubidaEvaluacion: new Date().toISOString().split('T')[0],
-          preguntasEvaluacion: JSON.stringify(quizQuestions)
-        })
-      })
+          fechaSubidaEvaluacion: new Date().toISOString().split("T")[0],
+          preguntasEvaluacion: JSON.stringify(quizQuestions),
+        }),
+      });
 
       toast({
         title: "¡Quiz Creado con Éxito!",
         description: `El quiz "${quizTitle}" está activo con ${quizQuestions.length} preguntas reales.`,
-        className: "bg-success text-success-foreground border-none"
-      })
+        className: "bg-success text-success-foreground border-none",
+      });
 
-      setQuizTitle('')
-      setQuizWeight(20)
-      setQuizPoints(20)
+      setQuizTitle("");
+      setQuizWeight(20);
+      setQuizPoints(20);
       setQuizQuestions([
-        { question: '', options: ['', '', '', ''], correctAnswer: 0, explanation: '', topic: '' }
-      ])
-      setIsCreateQuizOpen(false)
-      setTick(t => t + 1)
+        {
+          question: "",
+          options: ["", "", "", ""],
+          correctAnswer: 0,
+          explanation: "",
+          topic: "",
+        },
+      ]);
+      setIsCreateQuizOpen(false);
+      setTick((t) => t + 1);
     } catch (err) {
-      console.error(err)
+      console.error(err);
       toast({
         title: "Error al Registrar Quiz",
         description: "Hubo un fallo al subir la evaluación al servidor.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     } finally {
-      setSubmittingQuiz(false)
+      setSubmittingQuiz(false);
     }
-  }
-
+  };
 
   // UPDATE: EDITAR NOTA
   const handleUpdateGrade = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editGradeId || editGradeEstudiante === null || editGradeEvaluacion === null) return
-    setUpdatingGrade(true)
+    e.preventDefault();
+    if (
+      !editGradeId ||
+      editGradeEstudiante === null ||
+      editGradeEvaluacion === null
+    )
+      return;
+    setUpdatingGrade(true);
 
     try {
       await fetchApi(`/nota/updateNota/${editGradeId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           estudianteNota: editGradeEstudiante,
           evaluacionCuNota: editGradeEvaluacion,
-          observacionNota: editGradeObs || 'Actualizado',
-          notaNota: editGradeValue
-        })
-      })
+          observacionNota: editGradeObs || "Actualizado",
+          notaNota: editGradeValue,
+        }),
+      });
 
       toast({
         title: "¡Nota Actualizada!",
         description: `La calificación ha sido modificada con éxito.`,
-        className: "bg-success text-success-foreground border-none"
-      })
+        className: "bg-success text-success-foreground border-none",
+      });
 
-      setIsEditGradeOpen(false)
-      setIsViewGradesOpen(false)
-      setTick(t => t + 1)
+      setIsEditGradeOpen(false);
+      setIsViewGradesOpen(false);
+      setTick((t) => t + 1);
     } catch (err) {
       toast({
         title: "Error al Actualizar",
         description: "Hubo un error al modificar la nota.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     } finally {
-      setUpdatingGrade(false)
+      setUpdatingGrade(false);
     }
-  }
+  };
 
   // DELETE: ELIMINAR NOTA
   const handleDeleteGrade = async (gradeId: number) => {
-    if (!window.confirm("¿Estás seguro de eliminar esta calificación?")) return
-    
+    if (!window.confirm("¿Estás seguro de eliminar esta calificación?")) return;
+
     try {
       await fetchApi(`/nota/deleteNota/${gradeId}`, {
-        method: 'DELETE'
-      })
+        method: "DELETE",
+      });
 
       toast({
         title: "¡Nota Eliminada!",
         description: `La calificación ha sido borrada con éxito.`,
-        className: "bg-success text-success-foreground border-none"
-      })
+        className: "bg-success text-success-foreground border-none",
+      });
 
-      setIsEditGradeOpen(false)
-      setIsViewGradesOpen(false)
-      setTick(t => t + 1)
+      setIsEditGradeOpen(false);
+      setIsViewGradesOpen(false);
+      setTick((t) => t + 1);
     } catch (err) {
       toast({
         title: "Error al Eliminar",
         description: "Hubo un error al eliminar la nota.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   // ABRIR VISTA DE NOTAS
   const handleOpenGrades = (course: any) => {
-    setSelectedCourse(course)
-    
+    setSelectedCourse(course);
+
     // Mapear los estudiantes y buscar sus notas reales para cada evaluación de este curso
     const courseGrades = course.students.map((student: any) => {
       // Obtener notas del estudiante correspondientes a las evaluaciones de este curso
-      const studentEvaluationsGrades = course.evaluations.map((evaluation: any) => {
-        // Encontrar nota real en la lista global de notas
-        const gradeMatch = allGrades.find((g: any) => 
-          g.estudianteNota === student.idEstudiante && 
-          g.evaluacionCuNota === evaluation.idEvaluacion
-        )
-        return {
-          evalId: evaluation.idEvaluacion,
-          evalTitle: evaluation.tituloEvaluacion,
-          gradeId: gradeMatch ? gradeMatch.idNota : null,
-          grade: gradeMatch ? gradeMatch.notaNota : null,
-          obs: gradeMatch ? gradeMatch.observacionNota : ''
-        }
-      })
+      const studentEvaluationsGrades = course.evaluations.map(
+        (evaluation: any) => {
+          // Encontrar nota real en la lista global de notas
+          const gradeMatch = allGrades.find(
+            (g: any) =>
+              g.estudianteNota === student.idEstudiante &&
+              g.evaluacionCuNota === evaluation.idEvaluacion,
+          );
+          return {
+            evalId: evaluation.idEvaluacion,
+            evalTitle: evaluation.tituloEvaluacion,
+            gradeId: gradeMatch ? gradeMatch.idNota : null,
+            grade: gradeMatch ? gradeMatch.notaNota : null,
+            obs: gradeMatch ? gradeMatch.observacionNota : "",
+          };
+        },
+      );
 
       return {
         id: student.idEstudiante,
         name: `${student.nombreEstudiante} ${student.apellidoEstudiante}`,
         email: student.correoEstudiante,
         avatar: `${student.nombreEstudiante[0]}${student.apellidoEstudiante[0]}`,
-        grades: studentEvaluationsGrades
-      }
-    })
+        grades: studentEvaluationsGrades,
+      };
+    });
 
-    setGradesForCourse(courseGrades)
-    setIsViewGradesOpen(true)
-  }
+    setGradesForCourse(courseGrades);
+    setIsViewGradesOpen(true);
+  };
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="size-8 animate-spin text-primary" />
-        <span className="ml-3 text-muted-foreground">Cargando gestión de cursos...</span>
+        <span className="ml-3 text-muted-foreground">
+          Cargando gestión de cursos...
+        </span>
       </div>
-    )
+    );
   }
 
   return (
@@ -725,7 +752,8 @@ export default function TeacherCoursesPage() {
             Gestión de Cursos (Docente)
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Sube materiales, diseña exámenes de respuesta interactivos y califica a tus alumnos.
+            Sube materiales, diseña exámenes de respuesta interactivos y
+            califica a tus alumnos.
           </p>
         </div>
 
@@ -739,7 +767,8 @@ export default function TeacherCoursesPage() {
             <DialogHeader>
               <DialogTitle>Crear Curso</DialogTitle>
               <DialogDescription>
-                Registra el curso en la base de datos de la universidad. Se te asignará automáticamente.
+                Registra el curso en la base de datos de la universidad. Se te
+                asignará automáticamente.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateCourse} className="space-y-4 py-4">
@@ -771,13 +800,19 @@ export default function TeacherCoursesPage() {
                   min={1}
                   max={6}
                   value={newCourseCredits}
-                  onChange={(e) => setNewCourseCredits(parseInt(e.target.value))}
+                  onChange={(e) =>
+                    setNewCourseCredits(parseInt(e.target.value))
+                  }
                   required
                 />
               </div>
               <DialogFooter className="pt-2">
                 <Button type="submit" disabled={submittingCourse}>
-                  {submittingCourse ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Crear Curso"}
+                  {submittingCourse ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    "Crear Curso"
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -785,61 +820,67 @@ export default function TeacherCoursesPage() {
         </Dialog>
       </div>
 
-
-        {/* Modal: Editar Curso */}
-        <Dialog open={isEditCourseOpen} onOpenChange={setIsEditCourseOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Editar Curso</DialogTitle>
-              <DialogDescription>
-                Modifica los detalles del curso.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleUpdateCourse} className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editCourseName">Nombre del Curso</Label>
-                <Input
-                  id="editCourseName"
-                  value={editCourseName}
-                  onChange={(e) => setEditCourseName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editCourseDesc">Descripción</Label>
-                <Textarea
-                  id="editCourseDesc"
-                  value={editCourseDesc}
-                  onChange={(e) => setEditCourseDesc(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editCourseCredits">Créditos Académicos</Label>
-                <Input
-                  id="editCourseCredits"
-                  type="number"
-                  min={1}
-                  max={6}
-                  value={editCourseCredits}
-                  onChange={(e) => setEditCourseCredits(parseInt(e.target.value))}
-                  required
-                />
-              </div>
-              <DialogFooter className="pt-2">
-                <Button type="submit" disabled={updatingCourse}>
-                  {updatingCourse ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Guardar Cambios"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+      {/* Modal: Editar Curso */}
+      <Dialog open={isEditCourseOpen} onOpenChange={setIsEditCourseOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Curso</DialogTitle>
+            <DialogDescription>
+              Modifica los detalles del curso.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateCourse} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editCourseName">Nombre del Curso</Label>
+              <Input
+                id="editCourseName"
+                value={editCourseName}
+                onChange={(e) => setEditCourseName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editCourseDesc">Descripción</Label>
+              <Textarea
+                id="editCourseDesc"
+                value={editCourseDesc}
+                onChange={(e) => setEditCourseDesc(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editCourseCredits">Créditos Académicos</Label>
+              <Input
+                id="editCourseCredits"
+                type="number"
+                min={1}
+                max={6}
+                value={editCourseCredits}
+                onChange={(e) => setEditCourseCredits(parseInt(e.target.value))}
+                required
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={updatingCourse}>
+                {updatingCourse ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  "Guardar Cambios"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Grid de Cursos del Docente */}
       {courses.length > 0 ? (
         <div className="grid gap-6 lg:grid-cols-2">
           {courses.map((course) => (
-            <Card key={course.id} className="overflow-hidden hover:shadow-md transition-shadow border-muted">
+            <Card
+              key={course.id}
+              className="overflow-hidden hover:shadow-md transition-shadow border-muted"
+            >
               <CardHeader className="bg-muted/10 flex flex-row items-start justify-between space-y-0">
                 <div className="flex items-center gap-4">
                   <span className="text-4xl">{course.icon}</span>
@@ -851,20 +892,33 @@ export default function TeacherCoursesPage() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                  <Badge
+                    variant="outline"
+                    className="bg-primary/5 text-primary border-primary/20"
+                  >
                     {course.credits} créditos
                   </Badge>
                   <div className="flex gap-1 mt-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => {
-                      setEditCourseId(course.id);
-                      setEditCourseName(course.name);
-                      setEditCourseDesc(course.description);
-                      setEditCourseCredits(course.credits);
-                      setIsEditCourseOpen(true);
-                    }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-primary"
+                      onClick={() => {
+                        setEditCourseId(course.id);
+                        setEditCourseName(course.name);
+                        setEditCourseDesc(course.description);
+                        setEditCourseCredits(course.credits);
+                        setIsEditCourseOpen(true);
+                      }}
+                    >
                       <Pencil className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteCourse(course.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDeleteCourse(course.id)}
+                    >
                       <Trash2 className="size-4" />
                     </Button>
                   </div>
@@ -874,8 +928,12 @@ export default function TeacherCoursesPage() {
               <CardContent className="p-6 space-y-6">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progreso promedio estudiantes</span>
-                    <span className="font-bold text-primary">{course.progress}%</span>
+                    <span className="text-muted-foreground">
+                      Progreso promedio estudiantes
+                    </span>
+                    <span className="font-bold text-primary">
+                      {course.progress}%
+                    </span>
                   </div>
                   <Progress value={course.progress} className="h-2.5" />
                 </div>
@@ -884,75 +942,114 @@ export default function TeacherCoursesPage() {
                   <div className="flex items-center gap-3 rounded-lg bg-muted/40 p-3">
                     <Users className="size-5 text-primary" />
                     <div>
-                      <p className="text-lg font-bold">{course.studentsCount}</p>
-                      <p className="text-xs text-muted-foreground">Estudiantes</p>
+                      <p className="text-lg font-bold">
+                        {course.studentsCount}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Estudiantes
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-lg bg-muted/40 p-3">
                     <FileText className="size-5 text-primary" />
                     <div>
-                      <p className="text-lg font-bold">{course.activitiesCount}</p>
-                      <p className="text-xs text-muted-foreground">Materiales / Quizzes</p>
+                      <p className="text-lg font-bold">
+                        {course.activitiesCount}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Materiales / Quizzes
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Materiales en el Curso */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Actividades del Curso</h4>
+                  <h4 className="font-semibold text-sm">
+                    Actividades del Curso
+                  </h4>
                   {course.materials.length > 0 ? (
-                    <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                    <div className="space-y-1.5 max-h-35 overflow-y-auto pr-1">
                       {course.materials.map((m: any, idx: number) => {
-                        const hasEval = course.evaluations.some((ev: any) => ev.materialCuEvaluacion === m.idMaterial)
+                        const hasEval = course.evaluations.some(
+                          (ev: any) => ev.materialCuEvaluacion === m.idMaterial,
+                        );
                         return (
-                          <div key={idx} className="flex items-center justify-between text-xs p-2 rounded bg-muted/20 border">
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between text-xs p-2 rounded bg-muted/20 border"
+                          >
                             <span className="truncate font-medium flex items-center gap-1.5 max-w-[70%]">
-                              {m.tipoMaterial === 'Quiz' ? '📝' : '📄'} {m.tituloMaterial}
+                              {m.tipoMaterial === "Quiz" ? "📝" : "📄"}{" "}
+                              {m.tituloMaterial}
                             </span>
                             <div className="flex items-center gap-1">
-                              <Badge variant="secondary" className="text-[10px] py-0.5">
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] py-0.5"
+                              >
                                 {m.tipoMaterial}
                               </Badge>
                               {hasEval && (
-                                <Badge variant="default" className="text-[10px] py-0.5 bg-success hover:bg-success">
+                                <Badge
+                                  variant="default"
+                                  className="text-[10px] py-0.5 bg-success hover:bg-success"
+                                >
                                   Evaluación
                                 </Badge>
                               )}
-                              <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-primary ml-1" onClick={(e) => {
-                                e.stopPropagation();
-                                setEditMaterialId(m.idMaterial);
-                                setEditMaterialTitle(m.tituloMaterial);
-                                setEditMaterialDesc(m.descripcionMaterial);
-                                setEditMaterialType(m.tipoMaterial);
-                                setEditMaterialUrl(m.urlMaterial);
-                                setEditMaterialAsignacionId(m.asignacionCuAsIdMaterial);
-                                setIsEditMaterialOpen(true);
-                              }}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-muted-foreground hover:text-primary ml-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditMaterialId(m.idMaterial);
+                                  setEditMaterialTitle(m.tituloMaterial);
+                                  setEditMaterialDesc(m.descripcionMaterial);
+                                  setEditMaterialType(m.tipoMaterial);
+                                  setEditMaterialUrl(m.urlMaterial);
+                                  setEditMaterialAsignacionId(
+                                    m.asignacionCuAsIdMaterial,
+                                  );
+                                  setIsEditMaterialOpen(true);
+                                }}
+                              >
                                 <Pencil className="size-3" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteMaterial(m.idMaterial);
-                              }}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteMaterial(m.idMaterial);
+                                }}
+                              >
                                 <Trash2 className="size-3" />
                               </Button>
                             </div>
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground italic">No hay actividades publicadas.</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      No hay actividades publicadas.
+                    </p>
                   )}
                 </div>
 
                 {/* Acciones del Curso */}
                 <div className="flex flex-wrap gap-2 pt-2 border-t">
                   {/* Botón: Subir Material */}
-                  <Dialog open={isAddMaterialOpen && selectedCourse?.id === course.id} onOpenChange={(open) => {
-                    setSelectedCourse(course)
-                    setIsAddMaterialOpen(open)
-                  }}>
+                  <Dialog
+                    open={isAddMaterialOpen && selectedCourse?.id === course.id}
+                    onOpenChange={(open) => {
+                      setSelectedCourse(course);
+                      setIsAddMaterialOpen(open);
+                    }}
+                  >
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-1.5">
                         <Plus className="size-3.5" /> Subir Material
@@ -960,12 +1057,18 @@ export default function TeacherCoursesPage() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                       <DialogHeader>
-                        <DialogTitle>Subir Material a {course.name}</DialogTitle>
+                        <DialogTitle>
+                          Subir Material a {course.name}
+                        </DialogTitle>
                         <DialogDescription>
-                          Añade diapositivas, PDFs, enlaces o videos al curso de los estudiantes.
+                          Añade diapositivas, PDFs, enlaces o videos al curso de
+                          los estudiantes.
                         </DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={handleAddMaterial} className="space-y-4 py-4">
+                      <form
+                        onSubmit={handleAddMaterial}
+                        className="space-y-4 py-4"
+                      >
                         <div className="space-y-2">
                           <Label htmlFor="matTitle">Título del Material</Label>
                           <Input
@@ -988,19 +1091,28 @@ export default function TeacherCoursesPage() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="matType">Tipo de Material</Label>
-                          <Select value={materialType} onValueChange={setMaterialType}>
+                          <Select
+                            value={materialType}
+                            onValueChange={setMaterialType}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Selecciona tipo" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="PDF">Documento PDF</SelectItem>
-                              <SelectItem value="Diapositivas">Diapositivas PPT</SelectItem>
-                              <SelectItem value="Video">Video / Enlace Externo</SelectItem>
+                              <SelectItem value="Diapositivas">
+                                Diapositivas PPT
+                              </SelectItem>
+                              <SelectItem value="Video">
+                                Video / Enlace Externo
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="matUrl">URL del Recurso (Opcional)</Label>
+                          <Label htmlFor="matUrl">
+                            URL del Recurso (Opcional)
+                          </Label>
                           <Input
                             id="matUrl"
                             placeholder="https://drive.google.com/..."
@@ -1010,7 +1122,11 @@ export default function TeacherCoursesPage() {
                         </div>
                         <DialogFooter className="pt-2">
                           <Button type="submit" disabled={submittingMaterial}>
-                            {submittingMaterial ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Publicar Material"}
+                            {submittingMaterial ? (
+                              <Loader2 className="mr-2 size-4 animate-spin" />
+                            ) : (
+                              "Publicar Material"
+                            )}
                           </Button>
                         </DialogFooter>
                       </form>
@@ -1018,13 +1134,21 @@ export default function TeacherCoursesPage() {
                   </Dialog>
 
                   {/* Botón: Crear Quiz */}
-                  <Dialog open={isCreateQuizOpen && selectedCourse?.id === course.id} onOpenChange={(open) => {
-                    setSelectedCourse(course)
-                    setIsCreateQuizOpen(open)
-                  }}>
+                  <Dialog
+                    open={isCreateQuizOpen && selectedCourse?.id === course.id}
+                    onOpenChange={(open) => {
+                      setSelectedCourse(course);
+                      setIsCreateQuizOpen(open);
+                    }}
+                  >
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5 text-primary border-primary/20 hover:bg-primary/5">
-                        <Sparkles className="size-3.5 text-primary" /> Crear Quiz
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-primary border-primary/20 hover:bg-primary/5"
+                      >
+                        <Sparkles className="size-3.5 text-primary" /> Crear
+                        Quiz
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -1034,10 +1158,14 @@ export default function TeacherCoursesPage() {
                           Constructor Visual de Quizzes
                         </DialogTitle>
                         <DialogDescription>
-                          Diseña cuestionarios interactivos reales. Tus preguntas se guardarán directamente en el backend.
+                          Diseña cuestionarios interactivos reales. Tus
+                          preguntas se guardarán directamente en el backend.
                         </DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={handleCreateQuiz} className="space-y-6 py-4">
+                      <form
+                        onSubmit={handleCreateQuiz}
+                        className="space-y-6 py-4"
+                      >
                         <div className="grid gap-4 sm:grid-cols-3">
                           <div className="sm:col-span-1 space-y-2">
                             <Label htmlFor="quizTitle">Nombre del Quiz</Label>
@@ -1050,26 +1178,34 @@ export default function TeacherCoursesPage() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="quizPoints">Puntos Totales (Nota)</Label>
+                            <Label htmlFor="quizPoints">
+                              Puntos Totales (Nota)
+                            </Label>
                             <Input
                               id="quizPoints"
                               type="number"
                               min={1}
                               max={100}
                               value={quizPoints}
-                              onChange={(e) => setQuizPoints(parseInt(e.target.value))}
+                              onChange={(e) =>
+                                setQuizPoints(parseInt(e.target.value))
+                              }
                               required
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="quizWeight">Peso en el Curso (%)</Label>
+                            <Label htmlFor="quizWeight">
+                              Peso en el Curso (%)
+                            </Label>
                             <Input
                               id="quizWeight"
                               type="number"
                               min={1}
                               max={100}
                               value={quizWeight}
-                              onChange={(e) => setQuizWeight(parseInt(e.target.value))}
+                              onChange={(e) =>
+                                setQuizWeight(parseInt(e.target.value))
+                              }
                               required
                             />
                           </div>
@@ -1079,22 +1215,34 @@ export default function TeacherCoursesPage() {
                         <div className="space-y-4 border-t pt-4">
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold text-sm flex items-center gap-2">
-                              <span>Preguntas creadas: {quizQuestions.length}</span>
+                              <span>
+                                Preguntas creadas: {quizQuestions.length}
+                              </span>
                             </h3>
-                            <Button type="button" variant="secondary" size="sm" onClick={handleAddQuestionField}>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={handleAddQuestionField}
+                            >
                               + Añadir Pregunta
                             </Button>
                           </div>
 
                           {quizQuestions.map((q, qIdx) => (
-                            <Card key={qIdx} className="p-4 space-y-4 bg-muted/10 relative border-dashed">
+                            <Card
+                              key={qIdx}
+                              className="p-4 space-y-4 bg-muted/10 relative border-dashed"
+                            >
                               {quizQuestions.length > 1 && (
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon"
                                   className="absolute top-2 right-2 text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleRemoveQuestionField(qIdx)}
+                                  onClick={() =>
+                                    handleRemoveQuestionField(qIdx)
+                                  }
                                 >
                                   <Trash2 className="size-4" />
                                 </Button>
@@ -1108,7 +1256,12 @@ export default function TeacherCoursesPage() {
                                 <Textarea
                                   placeholder="Escribe el enunciado de la pregunta..."
                                   value={q.question}
-                                  onChange={(e) => handleQuestionTextChange(qIdx, e.target.value)}
+                                  onChange={(e) =>
+                                    handleQuestionTextChange(
+                                      qIdx,
+                                      e.target.value,
+                                    )
+                                  }
                                   required
                                 />
                               </div>
@@ -1117,11 +1270,19 @@ export default function TeacherCoursesPage() {
                               <div className="grid gap-3 sm:grid-cols-2">
                                 {q.options.map((option, oIdx) => (
                                   <div key={oIdx} className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Opción {oIdx + 1}</Label>
+                                    <Label className="text-xs text-muted-foreground">
+                                      Opción {oIdx + 1}
+                                    </Label>
                                     <Input
                                       placeholder={`Respuesta ${oIdx + 1}`}
                                       value={option}
-                                      onChange={(e) => handleOptionChange(qIdx, oIdx, e.target.value)}
+                                      onChange={(e) =>
+                                        handleOptionChange(
+                                          qIdx,
+                                          oIdx,
+                                          e.target.value,
+                                        )
+                                      }
                                       required
                                     />
                                   </div>
@@ -1134,16 +1295,29 @@ export default function TeacherCoursesPage() {
                                   <Label>Opción Correcta</Label>
                                   <Select
                                     value={q.correctAnswer.toString()}
-                                    onValueChange={(val) => handleCorrectAnswerChange(qIdx, parseInt(val))}
+                                    onValueChange={(val) =>
+                                      handleCorrectAnswerChange(
+                                        qIdx,
+                                        parseInt(val),
+                                      )
+                                    }
                                   >
                                     <SelectTrigger>
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="0">Opción 1</SelectItem>
-                                      <SelectItem value="1">Opción 2</SelectItem>
-                                      <SelectItem value="2">Opción 3</SelectItem>
-                                      <SelectItem value="3">Opción 4</SelectItem>
+                                      <SelectItem value="0">
+                                        Opción 1
+                                      </SelectItem>
+                                      <SelectItem value="1">
+                                        Opción 2
+                                      </SelectItem>
+                                      <SelectItem value="2">
+                                        Opción 3
+                                      </SelectItem>
+                                      <SelectItem value="3">
+                                        Opción 4
+                                      </SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -1154,7 +1328,9 @@ export default function TeacherCoursesPage() {
                                   <Input
                                     placeholder="Ej: Suma de matrices"
                                     value={q.topic}
-                                    onChange={(e) => handleTopicChange(qIdx, e.target.value)}
+                                    onChange={(e) =>
+                                      handleTopicChange(qIdx, e.target.value)
+                                    }
                                   />
                                 </div>
                               </div>
@@ -1165,7 +1341,12 @@ export default function TeacherCoursesPage() {
                                 <Textarea
                                   placeholder="¿Por qué esta respuesta es la correcta?..."
                                   value={q.explanation}
-                                  onChange={(e) => handleExplanationChange(qIdx, e.target.value)}
+                                  onChange={(e) =>
+                                    handleExplanationChange(
+                                      qIdx,
+                                      e.target.value,
+                                    )
+                                  }
                                   className="h-16"
                                 />
                               </div>
@@ -1174,8 +1355,16 @@ export default function TeacherCoursesPage() {
                         </div>
 
                         <DialogFooter className="pt-2 border-t">
-                          <Button type="submit" className="w-full sm:w-auto" disabled={submittingQuiz}>
-                            {submittingQuiz ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Publicar Quiz en el Servidor"}
+                          <Button
+                            type="submit"
+                            className="w-full sm:w-auto"
+                            disabled={submittingQuiz}
+                          >
+                            {submittingQuiz ? (
+                              <Loader2 className="mr-2 size-4 animate-spin" />
+                            ) : (
+                              "Publicar Quiz en el Servidor"
+                            )}
                           </Button>
                         </DialogFooter>
                       </form>
@@ -1183,7 +1372,12 @@ export default function TeacherCoursesPage() {
                   </Dialog>
 
                   {/* Botón: Ver Notas por Estudiante */}
-                  <Button variant="ghost" size="sm" className="gap-1.5 ml-auto text-muted-foreground hover:text-foreground" onClick={() => handleOpenGrades(course)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 ml-auto text-muted-foreground hover:text-foreground"
+                    onClick={() => handleOpenGrades(course)}
+                  >
                     <GraduationCap className="size-4" /> Ver Notas
                   </Button>
                 </div>
@@ -1194,72 +1388,81 @@ export default function TeacherCoursesPage() {
       ) : (
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-20 text-center bg-card">
           <BookOpen className="size-16 text-muted-foreground/30 animate-pulse" />
-          <h3 className="mt-4 text-xl font-semibold">No tienes cursos a tu cargo</h3>
+          <h3 className="mt-4 text-xl font-semibold">
+            No tienes cursos a tu cargo
+          </h3>
           <p className="mt-2 text-muted-foreground max-w-sm">
-            Registra tu primer curso haciendo clic en el botón superior derecho. ¡Te conectarás al instante!
+            Registra tu primer curso haciendo clic en el botón superior derecho.
+            ¡Te conectarás al instante!
           </p>
         </div>
       )}
 
-
-        {/* Modal: Editar Material */}
-        <Dialog open={isEditMaterialOpen} onOpenChange={setIsEditMaterialOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Editar Material</DialogTitle>
-              <DialogDescription>
-                Modifica los detalles del material seleccionado.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleUpdateMaterial} className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editMatTitle">Título del Material</Label>
-                <Input
-                  id="editMatTitle"
-                  value={editMaterialTitle}
-                  onChange={(e) => setEditMaterialTitle(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editMatDesc">Descripción</Label>
-                <Textarea
-                  id="editMatDesc"
-                  value={editMaterialDesc}
-                  onChange={(e) => setEditMaterialDesc(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editMatType">Tipo de Material</Label>
-                <Select value={editMaterialType} onValueChange={setEditMaterialType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PDF">Documento PDF</SelectItem>
-                    <SelectItem value="Diapositivas">Diapositivas PPT</SelectItem>
-                    <SelectItem value="Video">Video / Enlace Externo</SelectItem>
-                    <SelectItem value="Quiz">Quiz Interactivo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editMatUrl">URL del Recurso</Label>
-                <Input
-                  id="editMatUrl"
-                  value={editMaterialUrl}
-                  onChange={(e) => setEditMaterialUrl(e.target.value)}
-                />
-              </div>
-              <DialogFooter className="pt-2">
-                <Button type="submit" disabled={updatingMaterial}>
-                  {updatingMaterial ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Guardar Cambios"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+      {/* Modal: Editar Material */}
+      <Dialog open={isEditMaterialOpen} onOpenChange={setIsEditMaterialOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Material</DialogTitle>
+            <DialogDescription>
+              Modifica los detalles del material seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateMaterial} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editMatTitle">Título del Material</Label>
+              <Input
+                id="editMatTitle"
+                value={editMaterialTitle}
+                onChange={(e) => setEditMaterialTitle(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editMatDesc">Descripción</Label>
+              <Textarea
+                id="editMatDesc"
+                value={editMaterialDesc}
+                onChange={(e) => setEditMaterialDesc(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editMatType">Tipo de Material</Label>
+              <Select
+                value={editMaterialType}
+                onValueChange={setEditMaterialType}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PDF">Documento PDF</SelectItem>
+                  <SelectItem value="Diapositivas">Diapositivas PPT</SelectItem>
+                  <SelectItem value="Video">Video / Enlace Externo</SelectItem>
+                  <SelectItem value="Quiz">Quiz Interactivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editMatUrl">URL del Recurso</Label>
+              <Input
+                id="editMatUrl"
+                value={editMaterialUrl}
+                onChange={(e) => setEditMaterialUrl(e.target.value)}
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={updatingMaterial}>
+                {updatingMaterial ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  "Guardar Cambios"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* MODAL: VER NOTAS DEL CURSO */}
       <Dialog open={isViewGradesOpen} onOpenChange={setIsViewGradesOpen}>
@@ -1270,7 +1473,8 @@ export default function TeacherCoursesPage() {
               Notas de Estudiantes: {selectedCourse?.name}
             </DialogTitle>
             <DialogDescription>
-              Detalle de notas reales obtenidas por los alumnos en cada quiz disponible en este curso.
+              Detalle de notas reales obtenidas por los alumnos en cada quiz
+              disponible en este curso.
             </DialogDescription>
           </DialogHeader>
 
@@ -1281,10 +1485,14 @@ export default function TeacherCoursesPage() {
                   <TableRow>
                     <TableHead className="font-semibold">Estudiante</TableHead>
                     {selectedCourse.evaluations.map((ev: any) => (
-                      <TableHead key={ev.idEvaluacion} className="text-center font-semibold">
+                      <TableHead
+                        key={ev.idEvaluacion}
+                        className="text-center font-semibold"
+                      >
                         {ev.tituloEvaluacion}
                         <span className="block text-[10px] text-muted-foreground font-normal">
-                          Max: {ev.puntosEvaluacion} pts | {ev.porcentajeEvaluacion}%
+                          Max: {ev.puntosEvaluacion} pts |{" "}
+                          {ev.porcentajeEvaluacion}%
                         </span>
                       </TableHead>
                     ))}
@@ -1297,11 +1505,17 @@ export default function TeacherCoursesPage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="size-7">
-                              <AvatarFallback className="text-xs font-semibold">{student.avatar}</AvatarFallback>
+                              <AvatarFallback className="text-xs font-semibold">
+                                {student.avatar}
+                              </AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col min-w-0">
-                              <span className="text-sm font-medium truncate max-w-[150px]">{student.name}</span>
-                              <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">{student.email}</span>
+                              <span className="text-sm font-medium truncate max-w-37.5">
+                                {student.name}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground truncate max-w-37.5">
+                                {student.email}
+                              </span>
                             </div>
                           </div>
                         </TableCell>
@@ -1309,19 +1523,25 @@ export default function TeacherCoursesPage() {
                           <TableCell key={idx} className="text-center">
                             {eg.grade !== null ? (
                               <div className="flex flex-col items-center gap-1">
-                                <Badge className="bg-success/15 text-success hover:bg-success/20 border-none font-bold cursor-pointer" onClick={() => {
-                                  setEditGradeId(eg.gradeId);
-                                  setEditGradeValue(eg.grade);
-                                  setEditGradeObs(eg.obs);
-                                  setEditGradeEstudiante(student.id);
-                                  setEditGradeEvaluacion(eg.evalId);
-                                  setIsEditGradeOpen(true);
-                                }}>
-                                  {eg.grade} pts <Pencil className="size-2.5 ml-1" />
+                                <Badge
+                                  className="bg-success/15 text-success hover:bg-success/20 border-none font-bold cursor-pointer"
+                                  onClick={() => {
+                                    setEditGradeId(eg.gradeId);
+                                    setEditGradeValue(eg.grade);
+                                    setEditGradeObs(eg.obs);
+                                    setEditGradeEstudiante(student.id);
+                                    setEditGradeEvaluacion(eg.evalId);
+                                    setIsEditGradeOpen(true);
+                                  }}
+                                >
+                                  {eg.grade} pts{" "}
+                                  <Pencil className="size-2.5 ml-1" />
                                 </Badge>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground/60 text-xs">-</span>
+                              <span className="text-muted-foreground/60 text-xs">
+                                -
+                              </span>
                             )}
                           </TableCell>
                         ))}
@@ -1329,7 +1549,10 @@ export default function TeacherCoursesPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={selectedCourse.evaluations.length + 1} className="text-center py-8 text-muted-foreground italic">
+                      <TableCell
+                        colSpan={selectedCourse.evaluations.length + 1}
+                        className="text-center py-8 text-muted-foreground italic"
+                      >
                         No hay alumnos matriculados en este curso.
                       </TableCell>
                     </TableRow>
@@ -1340,8 +1563,13 @@ export default function TeacherCoursesPage() {
           ) : (
             <div className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted/10 mt-4">
               <AlertCircle className="size-8 text-muted-foreground/60" />
-              <p className="mt-2 text-sm text-muted-foreground font-medium">No se han diseñado exámenes para este curso.</p>
-              <p className="text-xs text-muted-foreground mt-1">Crea un quiz real para comenzar a registrar notas de estudiantes.</p>
+              <p className="mt-2 text-sm text-muted-foreground font-medium">
+                No se han diseñado exámenes para este curso.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Crea un quiz real para comenzar a registrar notas de
+                estudiantes.
+              </p>
             </div>
           )}
         </DialogContent>
@@ -1379,18 +1607,25 @@ export default function TeacherCoursesPage() {
             </div>
             <DialogFooter className="pt-2 flex justify-between sm:justify-between">
               {editGradeId && (
-                <Button type="button" variant="destructive" onClick={() => handleDeleteGrade(editGradeId)}>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => handleDeleteGrade(editGradeId)}
+                >
                   Eliminar Nota
                 </Button>
               )}
               <Button type="submit" disabled={updatingGrade}>
-                {updatingGrade ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Guardar"}
+                {updatingGrade ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  "Guardar"
+                )}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-
     </div>
-  )
+  );
 }

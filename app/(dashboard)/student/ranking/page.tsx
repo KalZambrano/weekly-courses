@@ -4,11 +4,11 @@ import { toast } from 'sonner'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { fetchApi } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { LevelBadge } from '@/components/custom/level-badge'
 import { Trophy, Medal, Crown, Loader2 } from 'lucide-react'
+import { getAllStudents, getAllEnrollments } from '@/services/services'
 import { cn } from '@/lib/utils'
 
 export default function RankingPage() {
@@ -21,14 +21,8 @@ export default function RankingPage() {
       try {
         // Fetch all students and all enrollments
         const [allStudents, allEnrollments] = await Promise.all([
-          fetchApi('/estudiante/listEstudiantes').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/inscripcion/listInscripciones').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          })
+          getAllStudents(),
+          getAllEnrollments()
         ]);
 
         // Map and sum points

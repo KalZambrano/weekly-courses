@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { fetchApi } from '@/lib/api';
+import { config } from '@/lib/config-api';
 
 type UserRole = 'student' | 'teacher' | null;
 
@@ -88,12 +89,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     try {
       // ATENCIÓN: Usando fetchApi en lugar de fetch directo para usar la configuración centralizada
-      const data = await fetchApi('/auth/loginAsistente', {
+      const data = await fetchApi(config.endpoints.login, {
         method: 'POST',
         // Mapeamos lo que recibe React a lo que espera Spring Boot
         body: JSON.stringify({
           dni: emailOrDni,
-          contraseña: password
+          password: password
         }),
       });
 
@@ -111,7 +112,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
           if (frontendRole === 'student') {
             try {
-              const studentData = await fetchApi(`/estudiante/findEstudianteByDni/${dni}`, {
+              const studentData = await fetchApi(config.endpoints.asistentes.getOne(dni), {
                 headers: { 'Authorization': `Bearer ${data.token}` }
               });
               if (studentData && studentData.idEstudiante) {
@@ -125,7 +126,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             }
           } else if (frontendRole === 'teacher') {
             try {
-              const assistantData = await fetchApi(`/asistente/findAsistenteByDni/${dni}`, {
+              const assistantData = await fetchApi(config.endpoints.asistentes.getOne(dni), {
                 headers: { 'Authorization': `Bearer ${data.token}` }
               });
               if (assistantData) {

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { LevelBadge } from '@/components/custom/level-badge'
 import { Badge } from '@/components/ui/badge'
+import { config } from '@/lib/config-api'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ import { Label } from '@/components/ui/label'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { fetchApi } from '@/lib/api' // <-- Importamos nuestro interceptor
+import { handleDeleteStudent, getAllEnrollments, getAllAssignments, getAllCourses, getAllStudents } from '@/services/services'
 import {
   Search,
   Trash2,
@@ -99,50 +101,18 @@ export default function TeacherStudentsPage() {
     }
   }
 
-  const handleDeleteStudent = async (studentId: string) => {
-    if (!window.confirm("¿Estás seguro de eliminar este estudiante de la plataforma?")) return
-    
-    try {
-      await fetchApi(`/estudiante/deleteEstudiante/${studentId}`, {
-        method: 'DELETE'
-      })
-
-      toast.success("¡Estudiante Eliminado!", {
-        description: `El estudiante ha sido borrado con éxito.`,
-      })
-
-      setSelectedStudent(null)
-      setTick(t => t + 1)
-    } catch (err) {
-      toast.error("Error al Eliminar", {
-        description: "Hubo un error al eliminar el estudiante en el servidor."
-      })
-    }
-  }
-
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
+      
       try {
         const [allSts, allEnrollments, allAssignments, allCourses] = await Promise.all([
-          fetchApi('/estudiante/listEstudiantes').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/inscripcion/listInscripciones').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/asignacion/listAsignacion').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/curso/listCurso').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          })
+          getAllStudents(),
+          getAllEnrollments(),
+          getAllAssignments(),
+          getAllCourses()
         ]);
 
         const mapped = allSts.map((s: any) => {

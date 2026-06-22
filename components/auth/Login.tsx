@@ -166,12 +166,12 @@ export default function Login() {
                   type="button"
                   variant="outline"
                   className="w-full h-10 rounded-xl border-slate-300 hover:bg-green-50 hover:border-green-300 text-slate-700 hover:text-green-700 transition-all cursor-pointer text-left justify-start"
-                  onClick={() => fillCredentials('12345678', 'admin123')} // CAMBIO 4: Credenciales reales del backend
+                  onClick={() => fillCredentials('87654321', '87654321')} // CAMBIO 4: Credenciales reales del backend
                 >
                   <User className="h-4 w-4 mr-2 text-green-600" />
                   <div className="flex-1">
-                    <div className="text-sm font-medium">Profesor (Backend Real)</div>
-                    <div className="text-xs text-slate-500">DNI: 12345678</div>
+                    <div className="text-sm font-medium">Profesor</div>
+                    <div className="text-xs text-slate-500">DNI: 87654321</div>
                   </div>
                 </Button>
               </div>

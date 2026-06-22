@@ -4,7 +4,6 @@ import { toast } from "sonner";
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { fetchApi } from "@/lib/api";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/custom/stats-card";
@@ -15,6 +14,7 @@ import { StudentTutorial } from "@/components/tutorials/student-tutorial";
 import { useTutorial } from "@/hooks/useTutorial";
 import { RecentActivityList } from "@/components/custom/recent-activity-list";
 import { Loader2 } from "lucide-react";
+import { getAllEnrollments, getAllStudents } from "@/services/services";
 import {
   currentStudent,
   recentActivities,
@@ -70,14 +70,7 @@ export default function StudentDashboard() {
         }
 
         // 1. Obtener la lista de todos los estudiantes para el Ranking y perfil
-        const allStudents = await fetchApi("/estudiante/listEstudiantes").catch(
-          (e) => {
-            toast.error("Error de conexión", {
-              description: "No se pudieron cargar los datos solicitados.",
-            });
-            return [];
-          },
-        );
+        const allStudents = await getAllStudents();
 
         // Buscar el estudiante activo en la lista real del backend
         const realStudent = allStudents.find(
@@ -85,14 +78,7 @@ export default function StudentDashboard() {
         );
 
         // 2. Obtener inscripciones
-        const enrollments = await fetchApi(
-          "/inscripcion/listInscripciones",
-        ).catch((e) => {
-          toast.error("Error de conexión", {
-            description: "No se pudieron cargar los datos solicitados.",
-          });
-          return [];
-        });
+        const enrollments = await getAllEnrollments();
 
         // Filtrar las inscripciones del estudiante actual
         const studentId = parseInt(user.id);

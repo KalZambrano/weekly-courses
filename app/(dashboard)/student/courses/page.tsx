@@ -4,13 +4,13 @@ import { toast } from 'sonner'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { fetchApi } from '@/lib/api'
 import { courses as mockCourses } from '@/data/mock-data'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { CourseCard } from '@/components/custom/course-card'
 import { PointsSystemInfo } from '@/components/custom/points-system-info'
 import { Search, BookOpen, Filter, Loader2 } from 'lucide-react'
+import { getAllCourses, getAllAssignments, getAllEnrollments } from '@/services/services'
 import {
   Select,
   SelectContent,
@@ -38,18 +38,9 @@ export default function CoursesPage() {
         
         // Fetch enrollments, assignments, and courses
         const [allEnrollments, allAssignments, allCourses] = await Promise.all([
-          fetchApi('/inscripcion/listInscripciones').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/asignacion/listAsignacion').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          }),
-          fetchApi('/curso/listCurso').catch((e) => {
-            toast.error("Error de conexión", { description: "No se pudieron cargar los datos solicitados." })
-            return []
-          })
+          getAllEnrollments(),
+          getAllAssignments(),
+          getAllCourses()
         ]);
 
         // Filter enrollments for this student
