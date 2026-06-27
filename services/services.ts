@@ -1,8 +1,6 @@
 import { config } from '@/lib/config-api'
 import { fetchApi } from '@/lib/api'
-import { useToast } from '@/hooks/use-toast'
-
-const { toast } = useToast()
+import { toast } from '@/hooks/use-toast'
 
 // CURSOS
 export const getAllCourses = async () => {
@@ -14,7 +12,7 @@ export const getAllCourses = async () => {
 }
 
 export const handleDeleteCourse = async (courseId: number) => {
-    if (!window.confirm("¿Estás seguro de eliminar este curso? Se eliminará de forma permanente.")) return
+    if (!window.confirm("¿Estás seguro de eliminar este curso? Se eliminará de forma permanente.")) return false
 
     try {
         await fetchApi(config.endpoints.cursos.delete(courseId), {
@@ -26,12 +24,14 @@ export const handleDeleteCourse = async (courseId: number) => {
             description: `El curso ha sido eliminado con éxito.`,
             className: "bg-success text-success-foreground border-none"
         })
+        return true
     } catch (err) {
         toast({
             title: "Error al Eliminar",
             description: "Hubo un error al eliminar el curso en el servidor.",
             variant: "destructive"
         })
+        return false
     }
 }
 
@@ -46,10 +46,10 @@ export const getAllMaterials = async (): Promise<any[]> => {
 }
 
 export const handleDeleteMaterial = async (materialId: number) => {
-    if (!window.confirm("¿Estás seguro de eliminar este material?")) return
+    if (!window.confirm("¿Estás seguro de eliminar este material?")) return false
 
     try {
-        await fetchApi(`/material/deleteMaterial/${materialId}`, {
+        await fetchApi(config.endpoints.materialCurso.delete(materialId), {
             method: 'DELETE'
         })
 
@@ -58,13 +58,14 @@ export const handleDeleteMaterial = async (materialId: number) => {
             description: `El material ha sido eliminado con éxito.`,
             className: "bg-success text-success-foreground border-none"
         })
-
+        return true
     } catch (err) {
         toast({
             title: "Error al Eliminar",
             description: "Hubo un error al eliminar el material en el servidor.",
             variant: "destructive"
         })
+        return false
     }
 }
 
@@ -110,8 +111,11 @@ export const handleDeleteStudent = async (studentId: string) => {
 }
 
 // INSCRIPCION
-export const getAllEnrollments = async (): Promise<any[]> => {
-    return fetchApi(config.endpoints.inscripcionEsCu.getAll)
+export const getAllEnrollments = async (estudianteId?: number): Promise<any[]> => {
+    const url = estudianteId 
+        ? `${config.endpoints.inscripcionEsCu.getAll}?estudianteId=${estudianteId}`
+        : config.endpoints.inscripcionEsCu.getAll
+    return fetchApi(url)
         .catch((e) => {
             console.error(e)
             return []
@@ -121,6 +125,15 @@ export const getAllEnrollments = async (): Promise<any[]> => {
 // NOTAS
 export const getAllGrades = async (): Promise<any[]> => {
     return fetchApi(config.endpoints.notaEvaluacion.getAll)
+        .catch((e) => {
+            console.error(e);
+            return [];
+        });
+};
+
+// ASISTENTES
+export const getAllAssistants = async (): Promise<any[]> => {
+    return fetchApi(config.endpoints.asistentes.getAll)
         .catch((e) => {
             console.error(e);
             return [];

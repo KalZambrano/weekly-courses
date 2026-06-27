@@ -5,8 +5,10 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   // Obtenemos el token guardado en el login
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
+  const isFormData = options.body instanceof FormData;
+
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };

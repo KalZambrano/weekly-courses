@@ -104,6 +104,8 @@ export default function TeacherCoursesPage() {
   const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
   const [isCreateQuizOpen, setIsCreateQuizOpen] = useState(false);
   const [isViewGradesOpen, setIsViewGradesOpen] = useState(false);
+  const [editQuizMaterialId, setEditQuizMaterialId] = useState<number | null>(null);
+  const [editQuizEvaluationId, setEditQuizEvaluationId] = useState<number | null>(null);
 
   // Datos para Formularios
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
@@ -126,6 +128,8 @@ export default function TeacherCoursesPage() {
   const [materialDesc, setMaterialDesc] = useState("");
   const [materialType, setMaterialType] = useState("PDF");
   const [materialUrl, setMaterialUrl] = useState("");
+  const [materialSemana, setMaterialSemana] = useState<number>(1);
+  const [materialFile, setMaterialFile] = useState<File | null>(null);
   const [submittingMaterial, setSubmittingMaterial] = useState(false);
 
   // Form: Editar Material
@@ -144,6 +148,7 @@ export default function TeacherCoursesPage() {
   const [quizTitle, setQuizTitle] = useState("");
   const [quizWeight, setQuizWeight] = useState(20);
   const [quizPoints, setQuizPoints] = useState(20);
+  const [quizSemana, setQuizSemana] = useState<number>(1);
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([
     {
       question: "",
@@ -205,25 +210,29 @@ export default function TeacherCoursesPage() {
 
         // Filtrar asignaciones de este profesor
         const myAssignments = rawAssignments.filter(
-          (a: any) => a.asistenteIdAsignacion === teacherId,
+          (a: any) => 
+            a.asistenteIdAsignacionCuAs === teacherId ||
+            a.asistente?.id === teacherId ||
+            a.asistente?.dniEmpleado === user.id ||
+            a.asistente?.dniEmpleado === user.email
         );
 
         // Mapear cursos con sus estadísticas reales
         const processedCourses = myAssignments
           .map((assignment: any) => {
             const course = rawCourses.find(
-              (c: any) => c.idCurso === assignment.cursoIdAsignacion,
+              (c: any) => c.id === assignment.cursoIdAsignacionCuAs,
             );
             if (!course) return null;
 
             // Estudiantes inscritos en este curso (basado en asignacionIdInscripcion)
             const courseEnrollments = rawEnrollments.filter(
-              (e: any) => e.asignacionIdInscripcion === assignment.idAsignacion,
+              (e: any) => e.asignacionIdInscripcion === assignment.id,
             );
             const enrolledStudents = courseEnrollments
               .map((e: any) => {
                 const student = rawStudents.find(
-                  (s: any) => s.idEstudiante === e.estudianteIdInscripcion,
+                  (s: any) => s.id === e.estudianteIdInscripcion,
                 );
                 return student
                   ? { ...student, points: e.totalPuntosInscripcion || 0 }
@@ -234,13 +243,13 @@ export default function TeacherCoursesPage() {
             // Materiales de esta asignación
             const courseMaterials = rawMaterials.filter(
               (m: any) =>
-                m.asignacionCuAsIdMaterial === assignment.idAsignacion,
+                m.asignacionCuAsIdMaterial === assignment.id,
             );
 
             // Evaluaciones asociadas a los materiales de este curso
             const courseEvaluations = rawEvaluations.filter((e: any) =>
               courseMaterials.some(
-                (m: any) => m.idMaterial === e.materialCuEvaluacion,
+                (m: any) => m.id === e.materialCuEvaluacion,
               ),
             );
 
@@ -278,8 +287,8 @@ export default function TeacherCoursesPage() {
               icon = "💻";
 
             return {
-              id: course.idCurso,
-              assignmentId: assignment.idAsignacion,
+              id: course.id,
+              assignmentId: assignment.id,
               name: course.nombreCurso,
               description: course.descripcionCurso,
               credits: course.creditosCurso,
@@ -319,7 +328,7 @@ export default function TeacherCoursesPage() {
 
     try {
       // 1. Crear el curso
-      const courseRes = await fetchApi("/curso/addCurso", {
+      const courseRes = await fetchApi("/cursos/addCurso", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -329,20 +338,19 @@ export default function TeacherCoursesPage() {
         }),
       });
 
-      const courseId = courseRes?.data?.idCurso || courseRes?.idCurso;
+      const courseId = courseRes?.id || courseRes?.idCurso || courseRes?.data?.id || courseRes?.data?.idCurso;
 
       if (!courseId) {
         throw new Error("No se pudo obtener el ID del curso recién creado.");
       }
 
       // 2. Crear asignación al profesor actual
-      await fetchApi("/asignacion/addAsignacion", {
+      await fetchApi("/asignacionCuAs/addAsignacionCuAs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          asistenteIdAsignacion: parseInt(user?.id || "1"),
-          cursoIdAsignacion: courseId,
-          fechaAsignacion: new Date().toISOString().split("T")[0],
+          asistenteIdAsignacionCuAs: parseInt(user?.id || "1"),
+          cursoIdAsignacionCuAs: courseId,
         }),
       });
 
@@ -378,7 +386,7 @@ export default function TeacherCoursesPage() {
     setUpdatingCourse(true);
 
     try {
-      await fetchApi(`/curso/updateCurso/${editCourseId}`, {
+      await fetchApi(`/cursos/updateCurso/${editCourseId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -414,18 +422,26 @@ export default function TeacherCoursesPage() {
     setSubmittingMaterial(true);
 
     try {
+      const formData = new FormData();
+      formData.append("asignacionCuAsIdMaterial", selectedCourse.assignmentId.toString());
+      formData.append("tituloMaterial", materialTitle);
+      formData.append("descripcionMaterial", materialDesc);
+      formData.append("tipoMaterial", materialType);
+      formData.append("estadoMaterial", "true");
+      formData.append("semana", materialSemana.toString());
+
+      if (materialType === "Video") {
+        formData.append("urlMaterial", materialUrl || "#");
+      } else {
+        formData.append("urlMaterial", "");
+        if (materialFile) {
+          formData.append("file", materialFile);
+        }
+      }
+
       await fetchApi(config.endpoints.materialCurso.create, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          asignacionCuAsIdMaterial: selectedCourse.assignmentId,
-          tituloMaterial: materialTitle,
-          descripcionMaterial: materialDesc,
-          tipoMaterial: materialType,
-          estadoMaterial: true,
-          urlMaterial: materialUrl || "#",
-          fechaSubidaMaterial: new Date().toISOString().split("T")[0],
-        }),
+        body: formData,
       });
 
       toast({
@@ -437,6 +453,8 @@ export default function TeacherCoursesPage() {
       setMaterialTitle("");
       setMaterialDesc("");
       setMaterialUrl("");
+      setMaterialSemana(1);
+      setMaterialFile(null);
       setIsAddMaterialOpen(false);
       setTick((t) => t + 1);
     } catch (err) {
@@ -463,7 +481,7 @@ export default function TeacherCoursesPage() {
     setUpdatingMaterial(true);
 
     try {
-      await fetchApi(`/material/updateMaterial/${editMaterialId}`, {
+      await fetchApi(config.endpoints.materialCurso.update(editMaterialId), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -545,18 +563,18 @@ export default function TeacherCoursesPage() {
     setQuizQuestions(updated);
   };
 
-  // SUBMIT: CREAR QUIZ
+  // SUBMIT: CREAR O EDITAR QUIZ
   const handleCreateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quizTitle.trim()) return;
     setSubmittingQuiz(true);
 
     try {
-      // 1. Crear el material que representa al Quiz
-      const materialRes = await fetchApi(
-        config.endpoints.materialCurso.create,
-        {
-          method: "POST",
+      if (editQuizMaterialId) {
+        // MODO EDICIÓN
+        // 1. Actualizar el material
+        await fetchApi(config.endpoints.materialCurso.update(editQuizMaterialId), {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             asignacionCuAsIdMaterial: selectedCourse.assignmentId,
@@ -566,40 +584,103 @@ export default function TeacherCoursesPage() {
             estadoMaterial: true,
             urlMaterial: "#",
             fechaSubidaMaterial: new Date().toISOString().split("T")[0],
+            semana: quizSemana,
           }),
-        },
-      );
+        });
 
-      const materialId = materialRes?.idMaterial;
+        // 2. Crear o Actualizar la Evaluación
+        if (editQuizEvaluationId) {
+          await fetchApi(config.endpoints.evaluacionCurso.update(editQuizEvaluationId), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialCuEvaluacion: editQuizMaterialId,
+              inscripcionEsCuEvaluacion: null,
+              tituloEvaluacion: quizTitle,
+              porcentajeEvaluacion: quizWeight,
+              puntosEvaluacion: quizPoints,
+              fechaSubidaEvaluacion: new Date().toISOString().split("T")[0],
+              preguntasEvaluacion: JSON.stringify(quizQuestions),
+              semana: quizSemana,
+            }),
+          });
+        } else {
+          // Por si no tenía evaluación asignada aún
+          await fetchApi(config.endpoints.evaluacionCurso.create, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialCuEvaluacion: editQuizMaterialId,
+              inscripcionEsCuEvaluacion: null,
+              tituloEvaluacion: quizTitle,
+              porcentajeEvaluacion: quizWeight,
+              puntosEvaluacion: quizPoints,
+              fechaSubidaEvaluacion: new Date().toISOString().split("T")[0],
+              preguntasEvaluacion: JSON.stringify(quizQuestions),
+              semana: quizSemana,
+            }),
+          });
+        }
 
-      if (!materialId) {
-        throw new Error("No se pudo obtener el ID del material del Quiz.");
+        toast({
+          title: "¡Quiz Actualizado!",
+          description: `El quiz "${quizTitle}" ha sido actualizado con éxito.`,
+          className: "bg-success text-success-foreground border-none",
+        });
+
+      } else {
+        // MODO CREACIÓN
+        // 1. Crear el material que representa al Quiz
+        const quizMaterialFormData = new FormData();
+        quizMaterialFormData.append("asignacionCuAsIdMaterial", selectedCourse.assignmentId.toString());
+        quizMaterialFormData.append("tituloMaterial", quizTitle);
+        quizMaterialFormData.append("descripcionMaterial", `Evaluación interactiva: ${quizQuestions.length} preguntas`);
+        quizMaterialFormData.append("tipoMaterial", "Quiz");
+        quizMaterialFormData.append("estadoMaterial", "true");
+        quizMaterialFormData.append("urlMaterial", "#");
+        quizMaterialFormData.append("semana", quizSemana.toString());
+
+        const materialRes = await fetchApi(
+          config.endpoints.materialCurso.create,
+          {
+            method: "POST",
+            body: quizMaterialFormData,
+          },
+        );
+
+        const materialId = materialRes?.id || materialRes?.idMaterial;
+
+        if (!materialId) {
+          throw new Error("No se pudo obtener el ID del material del Quiz.");
+        }
+
+        // 2. Crear la Evaluación en el backend con las preguntas JSON
+        await fetchApi(config.endpoints.evaluacionCurso.create, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialCuEvaluacion: materialId,
+            inscripcionEsCuEvaluacion: null, // nullable now!
+            tituloEvaluacion: quizTitle,
+            porcentajeEvaluacion: quizWeight,
+            puntosEvaluacion: quizPoints,
+            fechaSubidaEvaluacion: new Date().toISOString().split("T")[0],
+            preguntasEvaluacion: JSON.stringify(quizQuestions),
+            semana: quizSemana,
+          }),
+        });
+
+        toast({
+          title: "¡Quiz Creado con Éxito!",
+          description: `El quiz "${quizTitle}" está activo con ${quizQuestions.length} preguntas reales.`,
+          className: "bg-success text-success-foreground border-none",
+        });
       }
-
-      // 2. Crear la Evaluación en el backend con las preguntas JSON
-      await fetchApi(config.endpoints.evaluacionCurso.create, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          materialCuEvaluacion: materialId,
-          inscripcionEsCuEvaluacion: null, // nullable now!
-          tituloEvaluacion: quizTitle,
-          porcentajeEvaluacion: quizWeight,
-          puntosEvaluacion: quizPoints,
-          fechaSubidaEvaluacion: new Date().toISOString().split("T")[0],
-          preguntasEvaluacion: JSON.stringify(quizQuestions),
-        }),
-      });
-
-      toast({
-        title: "¡Quiz Creado con Éxito!",
-        description: `El quiz "${quizTitle}" está activo con ${quizQuestions.length} preguntas reales.`,
-        className: "bg-success text-success-foreground border-none",
-      });
 
       setQuizTitle("");
       setQuizWeight(20);
       setQuizPoints(20);
+      setQuizSemana(1);
       setQuizQuestions([
         {
           question: "",
@@ -609,6 +690,8 @@ export default function TeacherCoursesPage() {
           topic: "",
         },
       ]);
+      setEditQuizMaterialId(null);
+      setEditQuizEvaluationId(null);
       setIsCreateQuizOpen(false);
       setTick((t) => t + 1);
     } catch (err) {
@@ -642,7 +725,7 @@ export default function TeacherCoursesPage() {
           estudianteNota: editGradeEstudiante,
           evaluacionCuNota: editGradeEvaluacion,
           observacionNota: editGradeObs || "Actualizado",
-          notaNota: editGradeValue,
+          calificacionNota: editGradeValue,
         }),
       });
 
@@ -705,21 +788,21 @@ export default function TeacherCoursesPage() {
           // Encontrar nota real en la lista global de notas
           const gradeMatch = allGrades.find(
             (g: any) =>
-              g.estudianteNota === student.idEstudiante &&
-              g.evaluacionCuNota === evaluation.idEvaluacion,
+              g.estudianteNota === student.id &&
+              g.evaluacionCuNota === evaluation.id,
           );
           return {
-            evalId: evaluation.idEvaluacion,
+            evalId: evaluation.id,
             evalTitle: evaluation.tituloEvaluacion,
-            gradeId: gradeMatch ? gradeMatch.idNota : null,
-            grade: gradeMatch ? gradeMatch.notaNota : null,
+            gradeId: gradeMatch ? gradeMatch.id : null,
+            grade: gradeMatch ? gradeMatch.calificacionNota : null,
             obs: gradeMatch ? gradeMatch.observacionNota : "",
           };
         },
       );
 
       return {
-        id: student.idEstudiante,
+        id: student.id,
         name: `${student.nombreEstudiante} ${student.apellidoEstudiante}`,
         email: student.correoEstudiante,
         avatar: `${student.nombreEstudiante[0]}${student.apellidoEstudiante[0]}`,
@@ -741,6 +824,8 @@ export default function TeacherCoursesPage() {
       </div>
     );
   }
+
+  const uniqueCourses = courses.filter((course, index, self) => self.findIndex((c) => c.id === course.id) === index);
 
   return (
     <div className="min-h-screen p-8 bg-background">
@@ -874,9 +959,9 @@ export default function TeacherCoursesPage() {
       </Dialog>
 
       {/* Grid de Cursos del Docente */}
-      {courses.length > 0 ? (
+      {uniqueCourses.length > 0 ? (
         <div className="grid gap-6 lg:grid-cols-2">
-          {courses.map((course) => (
+          {uniqueCourses.map((course) => (
             <Card
               key={course.id}
               className="overflow-hidden hover:shadow-md transition-shadow border-muted"
@@ -917,7 +1002,10 @@ export default function TeacherCoursesPage() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDeleteCourse(course.id)}
+                      onClick={async () => {
+                        const ok = await handleDeleteCourse(course.id);
+                        if (ok) setTick((t) => t + 1);
+                      }}
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -972,7 +1060,7 @@ export default function TeacherCoursesPage() {
                     <div className="space-y-1.5 max-h-35 overflow-y-auto pr-1">
                       {course.materials.map((m: any, idx: number) => {
                         const hasEval = course.evaluations.some(
-                          (ev: any) => ev.materialCuEvaluacion === m.idMaterial,
+                          (ev: any) => ev.materialCuEvaluacion === m.id,
                         );
                         return (
                           <div
@@ -1004,15 +1092,53 @@ export default function TeacherCoursesPage() {
                                 className="h-5 w-5 text-muted-foreground hover:text-primary ml-1"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditMaterialId(m.idMaterial);
-                                  setEditMaterialTitle(m.tituloMaterial);
-                                  setEditMaterialDesc(m.descripcionMaterial);
-                                  setEditMaterialType(m.tipoMaterial);
-                                  setEditMaterialUrl(m.urlMaterial);
-                                  setEditMaterialAsignacionId(
-                                    m.asignacionCuAsIdMaterial,
-                                  );
-                                  setIsEditMaterialOpen(true);
+                                  if (m.tipoMaterial === "Quiz") {
+                                    const evaluation = course.evaluations.find(
+                                      (ev: any) => ev.materialCuEvaluacion === m.id,
+                                    );
+                                    setQuizTitle(m.tituloMaterial);
+                                    setQuizWeight(evaluation ? evaluation.porcentajeEvaluacion : 20);
+                                    setQuizPoints(evaluation ? evaluation.puntosEvaluacion : 20);
+                                    let parsedQuestions: Question[] = [];
+                                    if (evaluation && evaluation.preguntasEvaluacion) {
+                                      try {
+                                        const parsed = typeof evaluation.preguntasEvaluacion === "string"
+                                          ? JSON.parse(evaluation.preguntasEvaluacion)
+                                          : evaluation.preguntasEvaluacion;
+                                        if (Array.isArray(parsed) && parsed.length > 0) {
+                                          parsedQuestions = parsed;
+                                        }
+                                      } catch (err) {
+                                        console.error("Error parsing quiz questions on edit:", err);
+                                      }
+                                    }
+                                    if (parsedQuestions.length === 0) {
+                                      parsedQuestions = [
+                                        {
+                                          question: "",
+                                          options: ["", "", "", ""],
+                                          correctAnswer: 0,
+                                          explanation: "",
+                                          topic: "",
+                                        },
+                                      ];
+                                    }
+                                    setQuizQuestions(parsedQuestions);
+                                    setEditQuizMaterialId(m.id);
+                                    setEditQuizEvaluationId(evaluation ? evaluation.id : null);
+                                    setSelectedCourse(course);
+                                    setIsCreateQuizOpen(true);
+                                  } else {
+                                    setEditMaterialId(m.id);
+                                    setEditMaterialTitle(m.tituloMaterial);
+                                    setEditMaterialDesc(m.descripcionMaterial);
+                                    setEditMaterialType(m.tipoMaterial);
+                                    setEditMaterialUrl(m.urlMaterial);
+                                    setEditMaterialAsignacionId(
+                                      m.asignacionCuAsIdMaterial,
+                                    );
+                                    setIsEditMaterialOpen(true);
+                                  }
                                 }}
                               >
                                 <Pencil className="size-3" />
@@ -1021,9 +1147,10 @@ export default function TeacherCoursesPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-5 w-5 text-muted-foreground hover:text-destructive"
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
-                                  handleDeleteMaterial(m.idMaterial);
+                                  const ok = await handleDeleteMaterial(m.id);
+                                  if (ok) setTick((t) => t + 1);
                                 }}
                               >
                                 <Trash2 className="size-3" />
@@ -1074,7 +1201,7 @@ export default function TeacherCoursesPage() {
                           <Input
                             id="matTitle"
                             placeholder="Ej: Guía Teórica de Matrices"
-                            value={materialTitle}
+                            value={materialTitle || ""}
                             onChange={(e) => setMaterialTitle(e.target.value)}
                             required
                           />
@@ -1084,42 +1211,76 @@ export default function TeacherCoursesPage() {
                           <Textarea
                             id="matDesc"
                             placeholder="Resumen del material..."
-                            value={materialDesc}
+                            value={materialDesc || ""}
                             onChange={(e) => setMaterialDesc(e.target.value)}
                             required
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="matType">Tipo de Material</Label>
-                          <Select
-                            value={materialType}
-                            onValueChange={setMaterialType}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona tipo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="PDF">Documento PDF</SelectItem>
-                              <SelectItem value="Diapositivas">
-                                Diapositivas PPT
-                              </SelectItem>
-                              <SelectItem value="Video">
-                                Video / Enlace Externo
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="matType">Tipo de Material</Label>
+                            <Select
+                              value={materialType}
+                              onValueChange={setMaterialType}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona tipo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="PDF">Documento PDF</SelectItem>
+                                <SelectItem value="Diapositivas">
+                                  Diapositivas PPT
+                                </SelectItem>
+                                <SelectItem value="Video">
+                                  Video / Enlace Externo
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="matSemana">Semana</Label>
+                            <Select
+                              value={materialSemana.toString()}
+                              onValueChange={(val) => setMaterialSemana(parseInt(val))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Semana" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 18 }, (_, i) => i + 1).map((w) => (
+                                  <SelectItem key={w} value={w.toString()}>
+                                    Semana {w}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="matUrl">
-                            URL del Recurso (Opcional)
-                          </Label>
-                          <Input
-                            id="matUrl"
-                            placeholder="https://drive.google.com/..."
-                            value={materialUrl}
-                            onChange={(e) => setMaterialUrl(e.target.value)}
-                          />
-                        </div>
+
+                        {materialType === "Video" ? (
+                          <div className="space-y-2">
+                            <Label htmlFor="matUrl">URL del Recurso (Obligatorio)</Label>
+                            <Input
+                              id="matUrl"
+                              type="url"
+                              placeholder="https://example.com/..."
+                              value={materialUrl || ""}
+                              onChange={(e) => setMaterialUrl(e.target.value)}
+                              required
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Label htmlFor="matFile">Subir Archivo (.pdf, .ppt, .pptx)</Label>
+                            <Input
+                              id="matFile"
+                              type="file"
+                              accept=".pdf,.ppt,.pptx"
+                              onChange={(e) => setMaterialFile(e.target.files?.[0] || null)}
+                              required={!materialFile}
+                            />
+                          </div>
+                        )}
                         <DialogFooter className="pt-2">
                           <Button type="submit" disabled={submittingMaterial}>
                             {submittingMaterial ? (
@@ -1139,6 +1300,22 @@ export default function TeacherCoursesPage() {
                     onOpenChange={(open) => {
                       setSelectedCourse(course);
                       setIsCreateQuizOpen(open);
+                      if (!open) {
+                        setQuizTitle("");
+                        setQuizWeight(20);
+                        setQuizPoints(20);
+                        setQuizQuestions([
+                          {
+                            question: "",
+                            options: ["", "", "", ""],
+                            correctAnswer: 0,
+                            explanation: "",
+                            topic: "",
+                          },
+                        ]);
+                        setEditQuizMaterialId(null);
+                        setEditQuizEvaluationId(null);
+                      }
                     }}
                   >
                     <DialogTrigger asChild>
@@ -1155,27 +1332,46 @@ export default function TeacherCoursesPage() {
                       <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                           <BrainCircuit className="size-5 text-primary" />
-                          Constructor Visual de Quizzes
+                          {editQuizMaterialId ? "Editar Quiz" : "Constructor Visual de Quizzes"}
                         </DialogTitle>
                         <DialogDescription>
-                          Diseña cuestionarios interactivos reales. Tus
-                          preguntas se guardarán directamente en el backend.
+                          {editQuizMaterialId 
+                            ? "Actualiza las preguntas, opciones y puntajes del quiz directamente." 
+                            : "Diseña cuestionarios interactivos reales. Tus preguntas se guardarán directamente en el backend."}
                         </DialogDescription>
                       </DialogHeader>
                       <form
                         onSubmit={handleCreateQuiz}
                         className="space-y-6 py-4"
                       >
-                        <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-4">
                           <div className="sm:col-span-1 space-y-2">
                             <Label htmlFor="quizTitle">Nombre del Quiz</Label>
                             <Input
                               id="quizTitle"
                               placeholder="Ej: Quiz 2: Matrices"
-                              value={quizTitle}
+                              value={quizTitle || ""}
                               onChange={(e) => setQuizTitle(e.target.value)}
                               required
                             />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="quizSemana">Semana</Label>
+                            <Select
+                              value={quizSemana.toString()}
+                              onValueChange={(val) => setQuizSemana(parseInt(val))}
+                            >
+                              <SelectTrigger id="quizSemana">
+                                <SelectValue placeholder="Semana" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 18 }, (_, i) => i + 1).map((w) => (
+                                  <SelectItem key={w} value={w.toString()}>
+                                    Semana {w}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="quizPoints">
@@ -1186,10 +1382,11 @@ export default function TeacherCoursesPage() {
                               type="number"
                               min={1}
                               max={100}
-                              value={quizPoints}
-                              onChange={(e) =>
-                                setQuizPoints(parseInt(e.target.value))
-                              }
+                              value={isNaN(quizPoints) ? "" : quizPoints}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                setQuizPoints(isNaN(val) ? 0 : val);
+                              }}
                               required
                             />
                           </div>
@@ -1202,10 +1399,11 @@ export default function TeacherCoursesPage() {
                               type="number"
                               min={1}
                               max={100}
-                              value={quizWeight}
-                              onChange={(e) =>
-                                setQuizWeight(parseInt(e.target.value))
-                              }
+                              value={isNaN(quizWeight) ? "" : quizWeight}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                setQuizWeight(isNaN(val) ? 0 : val);
+                              }}
                               required
                             />
                           </div>
@@ -1255,7 +1453,7 @@ export default function TeacherCoursesPage() {
                                 <Label>Texto de la Pregunta</Label>
                                 <Textarea
                                   placeholder="Escribe el enunciado de la pregunta..."
-                                  value={q.question}
+                                  value={q.question || ""}
                                   onChange={(e) =>
                                     handleQuestionTextChange(
                                       qIdx,
@@ -1275,7 +1473,7 @@ export default function TeacherCoursesPage() {
                                     </Label>
                                     <Input
                                       placeholder={`Respuesta ${oIdx + 1}`}
-                                      value={option}
+                                      value={option || ""}
                                       onChange={(e) =>
                                         handleOptionChange(
                                           qIdx,
@@ -1327,7 +1525,7 @@ export default function TeacherCoursesPage() {
                                   <Label>Tema / Concepto</Label>
                                   <Input
                                     placeholder="Ej: Suma de matrices"
-                                    value={q.topic}
+                                    value={q.topic || ""}
                                     onChange={(e) =>
                                       handleTopicChange(qIdx, e.target.value)
                                     }
@@ -1340,7 +1538,7 @@ export default function TeacherCoursesPage() {
                                 <Label>Explicación (Justificación)</Label>
                                 <Textarea
                                   placeholder="¿Por qué esta respuesta es la correcta?..."
-                                  value={q.explanation}
+                                  value={q.explanation || ""}
                                   onChange={(e) =>
                                     handleExplanationChange(
                                       qIdx,
@@ -1362,6 +1560,8 @@ export default function TeacherCoursesPage() {
                           >
                             {submittingQuiz ? (
                               <Loader2 className="mr-2 size-4 animate-spin" />
+                            ) : editQuizMaterialId ? (
+                              "Guardar Cambios"
                             ) : (
                               "Publicar Quiz en el Servidor"
                             )}
@@ -1412,7 +1612,7 @@ export default function TeacherCoursesPage() {
               <Label htmlFor="editMatTitle">Título del Material</Label>
               <Input
                 id="editMatTitle"
-                value={editMaterialTitle}
+                value={editMaterialTitle || ""}
                 onChange={(e) => setEditMaterialTitle(e.target.value)}
                 required
               />
@@ -1421,7 +1621,7 @@ export default function TeacherCoursesPage() {
               <Label htmlFor="editMatDesc">Descripción</Label>
               <Textarea
                 id="editMatDesc"
-                value={editMaterialDesc}
+                value={editMaterialDesc || ""}
                 onChange={(e) => setEditMaterialDesc(e.target.value)}
                 required
               />
@@ -1447,7 +1647,7 @@ export default function TeacherCoursesPage() {
               <Label htmlFor="editMatUrl">URL del Recurso</Label>
               <Input
                 id="editMatUrl"
-                value={editMaterialUrl}
+                value={editMaterialUrl || ""}
                 onChange={(e) => setEditMaterialUrl(e.target.value)}
               />
             </div>

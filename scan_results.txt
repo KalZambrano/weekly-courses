@@ -1,0 +1,449 @@
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\page.tsx ---
+  [Hook] L1 (BEFORE return): "use client";
+  [Hook] L8 (BEFORE return): const router = useRouter();
+  [Hook] L9 (BEFORE return): const { user } = useAuth();
+  [Hook] L11 (BEFORE return): useEffect(() => {
+  [Return] L19: return null;
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\student\layout.tsx ---
+  [Hook] L1 (BEFORE return): 'use client';
+  [Return] L11: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\student\page.tsx ---
+  [Hook] L1 (BEFORE return): "use client";
+  [Hook] L33 (BEFORE return): const { user } = useAuth();
+  [Hook] L34 (BEFORE return): const [motivationalMessage, setMotivationalMessage] = useState("");
+  [Hook] L35 (BEFORE return): const [studentData, setStudentData] = useState<any>(null);
+  [Hook] L37 (BEFORE return): useTutorial("student");
+  [Hook] L38 (BEFORE return): const [ranking, setRanking] = useState<any[]>([]);
+  [Hook] L39 (BEFORE return): const [stats, setStats] = useState({
+  [Hook] L44 (BEFORE return): const [loading, setLoading] = useState(true);
+  [Hook] L46 (BEFORE return): useEffect(() => {
+  [Hook] L50 (BEFORE return): useEffect(() => {
+  [Return] L61: return () => clearTimeout(timer);
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\student\courses\page.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L23 (BEFORE return): const { user } = useAuth()
+  [Hook] L24 (BEFORE return): const [searchQuery, setSearchQuery] = useState('')
+  [Hook] L25 (BEFORE return): const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed'>('all')
+  [Hook] L26 (BEFORE return): const [enrolledCourses, setEnrolledCourses] = useState<any[]>([])
+  [Hook] L27 (BEFORE return): const [loading, setLoading] = useState(true)
+  [Hook] L29 (BEFORE return): useEffect(() => {
+  [Return] L52: if (!assignment) return null;
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\student\courses\[id]\page.tsx ---
+  [Hook] L1 (BEFORE return): "use client";
+  [Hook] L120 (BEFORE return): const { id } = use(params);
+  [Hook] L121 (BEFORE return): const { user } = useAuth();
+  [Hook] L122 (BEFORE return): const { toast } = useToast();
+  [Hook] L124 (BEFORE return): const [course, setCourse] = useState<any>(null);
+  [Hook] L125 (BEFORE return): const [activities, setActivities] = useState<Activity[]>([]);
+  [Hook] L126 (BEFORE return): const [courseStudents, setCourseStudents] = useState<Student[]>([]);
+  [Hook] L127 (BEFORE return): const [courseRanking, setCourseRanking] = useState<RankingStudent[]>([]);
+  [Hook] L128 (BEFORE return): const [currentUserRanking, setCurrentUserRanking] = useState<any>(null);
+  [Hook] L130 (BEFORE return): const [activeActivity, setActiveActivity] = useState<Activity | null>(null);
+  [Hook] L131 (BEFORE return): const [loading, setLoading] = useState(true);
+  [Hook] L132 (BEFORE return): const [tick, setTick] = useState(0);
+  [Hook] L135 (BEFORE return): const [searchQuery, setSearchQuery] = useState("");
+  [Hook] L136 (BEFORE return): const [studentToInvite, setStudentToInvite] = useState<any>(null);
+  [Hook] L137 (BEFORE return): const [inviteMessage, setInviteMessage] = useState("");
+  [Hook] L138 (BEFORE return): const [isSendingInvite, setIsSendingInvite] = useState(false);
+  [Hook] L140 (BEFORE return): useEffect(() => {
+  [Return] L141: if (!user || !user.id) return;
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\student\ranking\page.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L15 (BEFORE return): const { user } = useAuth()
+  [Hook] L16 (BEFORE return): const [ranking, setRanking] = useState<any[]>([])
+  [Hook] L17 (BEFORE return): const [loading, setLoading] = useState(true)
+  [Hook] L19 (BEFORE return): useEffect(() => {
+  [Return] L37: return {
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\teacher\layout.tsx ---
+  [Hook] L1 (BEFORE return): 'use client';
+  [Return] L11: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\teacher\page.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L28 (BEFORE return): const { shouldShowTutorial, isLoading, markTutorialAsShown } = useTutorial('teacher');
+  [Hook] L30 (BEFORE return): useEffect(() => {
+  [Return] L39: return () => clearTimeout(timer);
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\teacher\courses\page.tsx ---
+  [Hook] L1 (BEFORE return): "use client";
+  [Hook] L89 (BEFORE return): const { user } = useAuth();
+  [Hook] L90 (BEFORE return): const { toast } = useToast();
+  [Hook] L92 (BEFORE return): const [loading, setLoading] = useState(true);
+  [Hook] L93 (BEFORE return): const [courses, setCourses] = useState<any[]>([]);
+  [Hook] L94 (BEFORE return): const [allAssignments, setAllAssignments] = useState<any[]>([]);
+  [Hook] L95 (BEFORE return): const [allMaterials, setAllMaterials] = useState<any[]>([]);
+  [Hook] L96 (BEFORE return): const [allEvaluations, setAllEvaluations] = useState<any[]>([]);
+  [Hook] L97 (BEFORE return): const [allStudents, setAllStudents] = useState<any[]>([]);
+  [Hook] L98 (BEFORE return): const [allEnrollments, setAllEnrollments] = useState<any[]>([]);
+  [Hook] L99 (BEFORE return): const [allGrades, setAllGrades] = useState<any[]>([]);
+  [Hook] L100 (BEFORE return): const [tick, setTick] = useState(0);
+  [Hook] L103 (BEFORE return): const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false);
+  [Hook] L104 (BEFORE return): const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
+  [Hook] L105 (BEFORE return): const [isCreateQuizOpen, setIsCreateQuizOpen] = useState(false);
+  [Hook] L106 (BEFORE return): const [isViewGradesOpen, setIsViewGradesOpen] = useState(false);
+  [Hook] L109 (BEFORE return): const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  [Hook] L112 (BEFORE return): const [newCourseName, setNewCourseName] = useState("");
+  [Hook] L113 (BEFORE return): const [newCourseDesc, setNewCourseDesc] = useState("");
+  [Hook] L114 (BEFORE return): const [newCourseCredits, setNewCourseCredits] = useState(4);
+  [Hook] L115 (BEFORE return): const [submittingCourse, setSubmittingCourse] = useState(false);
+  [Hook] L117 (BEFORE return): const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
+  [Hook] L118 (BEFORE return): const [editCourseId, setEditCourseId] = useState<number | null>(null);
+  [Hook] L119 (BEFORE return): const [editCourseName, setEditCourseName] = useState("");
+  [Hook] L120 (BEFORE return): const [editCourseDesc, setEditCourseDesc] = useState("");
+  [Hook] L121 (BEFORE return): const [editCourseCredits, setEditCourseCredits] = useState(4);
+  [Hook] L122 (BEFORE return): const [updatingCourse, setUpdatingCourse] = useState(false);
+  [Hook] L125 (BEFORE return): const [materialTitle, setMaterialTitle] = useState("");
+  [Hook] L126 (BEFORE return): const [materialDesc, setMaterialDesc] = useState("");
+  [Hook] L127 (BEFORE return): const [materialType, setMaterialType] = useState("PDF");
+  [Hook] L128 (BEFORE return): const [materialUrl, setMaterialUrl] = useState("");
+  [Hook] L129 (BEFORE return): const [submittingMaterial, setSubmittingMaterial] = useState(false);
+  [Hook] L132 (BEFORE return): const [isEditMaterialOpen, setIsEditMaterialOpen] = useState(false);
+  [Hook] L133 (BEFORE return): const [editMaterialId, setEditMaterialId] = useState<number | null>(null);
+  [Hook] L134 (BEFORE return): const [editMaterialTitle, setEditMaterialTitle] = useState("");
+  [Hook] L135 (BEFORE return): const [editMaterialDesc, setEditMaterialDesc] = useState("");
+  [Hook] L136 (BEFORE return): const [editMaterialType, setEditMaterialType] = useState("PDF");
+  [Hook] L137 (BEFORE return): const [editMaterialUrl, setEditMaterialUrl] = useState("");
+  [Hook] L138 (BEFORE return): const [editMaterialAsignacionId, setEditMaterialAsignacionId] = useState<
+  [Hook] L141 (BEFORE return): const [updatingMaterial, setUpdatingMaterial] = useState(false);
+  [Hook] L144 (BEFORE return): const [quizTitle, setQuizTitle] = useState("");
+  [Hook] L145 (BEFORE return): const [quizWeight, setQuizWeight] = useState(20);
+  [Hook] L146 (BEFORE return): const [quizPoints, setQuizPoints] = useState(20);
+  [Hook] L147 (BEFORE return): const [quizQuestions, setQuizQuestions] = useState<Question[]>([
+  [Hook] L156 (BEFORE return): const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  [Hook] L159 (BEFORE return): const [gradesForCourse, setGradesForCourse] = useState<any[]>([]);
+  [Hook] L162 (BEFORE return): const [isEditGradeOpen, setIsEditGradeOpen] = useState(false);
+  [Hook] L163 (BEFORE return): const [editGradeId, setEditGradeId] = useState<number | null>(null);
+  [Hook] L164 (BEFORE return): const [editGradeValue, setEditGradeValue] = useState<number>(0);
+  [Hook] L165 (BEFORE return): const [editGradeObs, setEditGradeObs] = useState("");
+  [Hook] L166 (BEFORE return): const [editGradeEstudiante, setEditGradeEstudiante] = useState<number | null>(
+  [Hook] L169 (BEFORE return): const [editGradeEvaluacion, setEditGradeEvaluacion] = useState<number | null>(
+  [Hook] L172 (BEFORE return): const [updatingGrade, setUpdatingGrade] = useState(false);
+  [Hook] L174 (BEFORE return): useEffect(() => {
+  [Return] L175: if (!user || !user.id) return;
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\teacher\metrics\page.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L49: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\teacher\students\page.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L52 (BEFORE return): const [searchQuery, setSearchQuery] = useState('')
+  [Hook] L53 (BEFORE return): const [levelFilter, setLevelFilter] = useState<'all' | 'Oro' | 'Plata' | 'Bronce'>('all')
+  [Hook] L54 (BEFORE return): const [selectedStudent, setSelectedStudent] = useState<string | null>(null)
+  [Hook] L57 (BEFORE return): const [notasReales, setNotasReales] = useState<any[]>([])
+  [Hook] L58 (BEFORE return): const [cargandoNotas, setCargandoNotas] = useState(false)
+  [Hook] L60 (BEFORE return): const [students, setStudents] = useState<any[]>([])
+  [Hook] L63 (BEFORE return): const [tick, setTick] = useState(0)
+  [Hook] L64 (BEFORE return): const [isEditStudentOpen, setIsEditStudentOpen] = useState(false)
+  [Hook] L65 (BEFORE return): const [editStudentId, setEditStudentId] = useState<string | null>(null)
+  [Hook] L66 (BEFORE return): const [editStudentNombre, setEditStudentNombre] = useState('')
+  [Hook] L67 (BEFORE return): const [editStudentApellido, setEditStudentApellido] = useState('')
+  [Hook] L68 (BEFORE return): const [editStudentEmail, setEditStudentEmail] = useState('')
+  [Hook] L69 (BEFORE return): const [editStudentPass, setEditStudentPass] = useState('')
+  [Hook] L70 (BEFORE return): const [updatingStudent, setUpdatingStudent] = useState(false)
+  [Hook] L104 (BEFORE return): const [loading, setLoading] = useState(true)
+  [Hook] L106 (BEFORE return): useEffect(() => {
+  [Return] L129: if (!assignment) return null;
+  [Hook] L202 (AFTER return): useEffect(() => {
+  >>> WARNING: Hooks found after return in C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\app\(dashboard)\teacher\students\page.tsx!
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\AppContent.tsx ---
+  [Hook] L1 (BEFORE return): 'use client';
+  [Hook] L11 (BEFORE return): const { isAuthenticated } = useAuth();
+  [Return] L14: return <Login />;
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\theme-provider.tsx ---
+  [Hook] L2 (BEFORE return): 'use client'
+  [Return] L11: return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\auth\Login.tsx ---
+  [Hook] L2 (BEFORE return): "use client";
+  [Hook] L21 (BEFORE return): const { login } = useAuth();
+  [Hook] L22 (BEFORE return): const router = useRouter();
+  [Hook] L25 (BEFORE return): const [dni, setDni] = useState("");
+  [Hook] L26 (BEFORE return): const [password, setPassword] = useState("");
+  [Hook] L27 (BEFORE return): const [error, setError] = useState("");
+  [Hook] L28 (BEFORE return): const [loading, setLoading] = useState(false);
+  [Return] L61: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\auth\RoleGuard.tsx ---
+  [Hook] L2 (BEFORE return): 'use client';
+  [Hook] L14 (BEFORE return): const { user, isAuthenticated } = useAuth();
+  [Hook] L15 (BEFORE return): const router = useRouter();
+  [Hook] L17 (BEFORE return): useEffect(() => {
+  [Return] L20: return;
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\activity-card.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L28: return '🎥'
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\activity-item.tsx ---
+  [Hook] L2 (BEFORE return): 'use client'
+  [Return] L46: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\activity-viewer.tsx ---
+  [Hook] L2 (BEFORE return): 'use client'
+  [Hook] L18 (BEFORE return): const [isCompleted, setIsCompleted] = useState(false)
+  [Return] L25: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\dashboard-sidebar.tsx ---
+  [Hook] L2 (BEFORE return): 'use client'
+  [Hook] L46 (BEFORE return): const pathname = usePathname()
+  [Hook] L47 (BEFORE return): const [collapsed, setCollapsed] = useState(false)
+  [Hook] L48 (BEFORE return): const { logout } = useAuth()
+  [Return] L54: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\multiplier-indicator.tsx ---
+  [Hook] L2 (BEFORE return): 'use client'
+  [Return] L24: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\points-system-info.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L8: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\progress-ring.tsx ---
+  [Hook] L2 (BEFORE return): 'use client'
+  [Return] L25: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\quiz-feedback.tsx ---
+  [Hook] L2 (BEFORE return): 'use client'
+  [Return] L9: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\quiz-viewer.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L19 (BEFORE return): const [currentQuestion, setCurrentQuestion] = useState(0)
+  [Hook] L20 (BEFORE return): const [selectedAnswers, setSelectedAnswers] = useState<number[]>([])
+  [Hook] L21 (BEFORE return): const [isSubmitted, setIsSubmitted] = useState(false)
+  [Hook] L22 (BEFORE return): const [score, setScore] = useState(0)
+  [Hook] L23 (BEFORE return): const [attemptCount, setAttemptCount] = useState(activity.attempts?.length || 0)
+  [Hook] L24 (BEFORE return): const [quizCompleted, setQuizCompleted] = useState(false)
+  [Return] L29: return <div className="p-8 text-center text-muted-foreground">Error: No quiz data found for this activity</div>
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\week-selector.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L15 (BEFORE return): const [internalWeek, setInternalWeek] = useState(selectedWeek || currentWeek)
+  [Return] L25: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\custom\weekly-activities.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L20 (BEFORE return): const [selectedWeek, setSelectedWeek] = useState(currentWeek)
+  [Return] L30: return statusOrder[a.status] - statusOrder[b.status]
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\tutorials\student-tutorial.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L12 (BEFORE return): const [driverInstance, setDriverInstance] = useState<any>(null)
+  [Hook] L14 (BEFORE return): useEffect(() => {
+  [Return] L73: return () => {
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\tutorials\teacher-tutorial.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L12 (BEFORE return): const [driverInstance, setDriverInstance] = useState<any>(null)
+  [Hook] L14 (BEFORE return): useEffect(() => {
+  [Return] L91: return () => {
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\tutorials\tutorial-provider.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L13: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\accordion.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return <AccordionPrimitive.Root data-slot="accordion" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\alert-dialog.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\aspect-ratio.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L8: return <AspectRatioPrimitive.Root data-slot="aspect-ratio" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\avatar.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\calendar.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L28: return (
+  [Hook] L184 (AFTER return): React.useEffect(() => {
+  >>> WARNING: Hooks found after return in C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\calendar.tsx!
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\carousel.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L36 (BEFORE return): const context = React.useContext(CarouselContext)
+  [Return] L42: return context
+  [Hook] L61 (AFTER return): const [canScrollPrev, setCanScrollPrev] = React.useState(false)
+  [Hook] L62 (AFTER return): const [canScrollNext, setCanScrollNext] = React.useState(false)
+  [Hook] L91 (AFTER return): React.useEffect(() => {
+  [Hook] L96 (AFTER return): React.useEffect(() => {
+  >>> WARNING: Hooks found after return in C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\carousel.tsx!
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\chart.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L28 (BEFORE return): const context = React.useContext(ChartContext)
+  [Return] L34: return context
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\checkbox.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L13: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\collapsible.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L8: return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\command.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L20: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\context-menu.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\dialog.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return <DialogPrimitive.Root data-slot="dialog" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\drawer.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L11: return <DrawerPrimitive.Root data-slot="drawer" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\dropdown-menu.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\field.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L11: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\form.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L38: return (
+  [Hook] L46 (AFTER return): const fieldContext = React.useContext(FormFieldContext)
+  [Hook] L47 (AFTER return): const itemContext = React.useContext(FormItemContext)
+  >>> WARNING: Hooks found after return in C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\form.tsx!
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\hover-card.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L11: return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\input-group.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L11: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\input-otp.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L16: return (
+  [Hook] L46 (AFTER return): const inputOTPContext = React.useContext(OTPInputContext)
+  >>> WARNING: Hooks found after return in C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\input-otp.tsx!
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\label.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\menubar.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L13: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\popover.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L11: return <PopoverPrimitive.Root data-slot="popover" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\progress.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L13: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\radio-group.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L13: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\resizable.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L13: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\scroll-area.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L13: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\select.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return <SelectPrimitive.Root data-slot="select" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\separator.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L14: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\sheet.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L10: return <SheetPrimitive.Root data-slot="sheet" {...props} />
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\sidebar.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L48 (BEFORE return): const context = React.useContext(SidebarContext)
+  [Return] L53: return context
+  [Hook] L70 (AFTER return): const [openMobile, setOpenMobile] = React.useState(false)
+  [Hook] L74 (AFTER return): const [_open, _setOpen] = React.useState(defaultOpen)
+  [Hook] L97 (AFTER return): React.useEffect(() => {
+  >>> WARNING: Hooks found after return in C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\sidebar.tsx!
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\slider.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L26: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\sonner.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L9: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\switch.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\table.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L8: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\tabs.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\toast.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L48: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\toaster.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Hook] L14 (BEFORE return): const { toasts } = useToast()
+  [Return] L16: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\toggle-group.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L25: return (
+  [Hook] L51 (AFTER return): const context = React.useContext(ToggleGroupContext)
+  >>> WARNING: Hooks found after return in C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\toggle-group.tsx!
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\toggle.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L38: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\tooltip.tsx ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L12: return (
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\use-mobile.tsx ---
+  [Hook] L6 (BEFORE return): const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+  [Hook] L8 (BEFORE return): React.useEffect(() => {
+  [Return] L15: return () => mql.removeEventListener('change', onChange)
+
+--- File: C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\use-toast.ts ---
+  [Hook] L1 (BEFORE return): 'use client'
+  [Return] L29: return count.toString()
+  [Hook] L171 (AFTER return): function useToast() {
+  [Hook] L172 (AFTER return): const [state, setState] = React.useState<State>(memoryState)
+  [Hook] L174 (AFTER return): React.useEffect(() => {
+  [Hook] L191 (AFTER return): export { useToast, toast }
+  >>> WARNING: Hooks found after return in C:\Users\operador\Desktop\Sistema-Educativo\weekly-courses\components\ui\use-toast.ts!

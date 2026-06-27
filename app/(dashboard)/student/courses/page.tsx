@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { CourseCard } from '@/components/custom/course-card'
 import { PointsSystemInfo } from '@/components/custom/points-system-info'
 import { Search, BookOpen, Filter, Loader2 } from 'lucide-react'
-import { getAllCourses, getAllAssignments, getAllEnrollments } from '@/services/services'
+import { getAllEnrollments } from '@/services/services'
 import {
   Select,
   SelectContent,
@@ -36,27 +36,19 @@ export default function CoursesPage() {
         }
         const studentId = parseInt(user.id)
         
-        // Fetch enrollments, assignments, and courses
-        const [allEnrollments, allAssignments, allCourses] = await Promise.all([
-          getAllEnrollments(),
-          getAllAssignments(),
-          getAllCourses()
-        ]);
+        // Fetch enrollments for this student
+        const myEnrollments = await getAllEnrollments(studentId);
 
-        // Filter enrollments for this student
-        const myEnrollments = allEnrollments.filter((e: any) => e.estudianteIdInscripcion === studentId);
-
-        // Map to course details
+        // Map to course details using nested assignment and course data from backend
         const mappedCourses = myEnrollments.map((enrollment: any) => {
-          const assignment = allAssignments.find((a: any) => a.idAsignacion === enrollment.asignacionIdInscripcion);
-          if (!assignment) return null;
-          const course = allCourses.find((c: any) => c.idCurso === assignment.cursoIdAsignacion);
+          const course = enrollment.asignacion?.curso;
           if (!course) return null;
 
           const progress = enrollment.totalPuntosInscripcion > 0 ? Math.min(100, enrollment.totalPuntosInscripcion) : 0;
           
           return {
-            id: course.idCurso.toString(),
+            id: (course.id ?? course.idCurso ?? "").toString(),
+            enrollmentId: (enrollment.id ?? enrollment.idInscripcion ?? "").toString(),
             name: course.nombreCurso,
             description: course.descripcionCurso,
             progress: progress,
@@ -66,7 +58,12 @@ export default function CoursesPage() {
           };
         }).filter((c: any) => c !== null);
 
-        setEnrolledCourses(mappedCourses);
+        // Filter duplicates by course ID to guarantee unique cards for the student
+        const uniqueCourses = mappedCourses.filter((course: any, index: number, self: any[]) =>
+          self.findIndex((c) => c.id === course.id) === index
+        );
+
+        setEnrolledCourses(uniqueCourses);
       } catch (err) {
         console.error("Error loading student courses, using mock data:", err);
         setEnrolledCourses(mockCourses);

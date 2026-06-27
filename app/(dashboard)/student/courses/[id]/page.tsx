@@ -1,5 +1,4 @@
 "use client";
-import { toast } from "sonner";
 //weekly-courses/app/(dashboard)/student/courses/[id]/page.tsx
 
 import { useAuth } from "@/context/AuthContext";
@@ -146,12 +145,13 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         const studentId = parseInt(user.id || "0");
         const courseId = parseInt(id);
 
-        // 1. Obtener detalles del curso
         const realCourse = await fetchApi(
-          `/curso/findCursoById/${courseId}`,
+          `/cursos/findCursoById/${courseId}`,
         ).catch((e) => {
-          toast.error("Error de conexión", {
+          toast({
+            title: "Error de conexión",
             description: "No se encontró el recurso solicitado.",
+            variant: "destructive",
           });
           return null;
         });
@@ -180,9 +180,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
         // Encontrar asignación para este curso
         const assignment = allAssignments.find(
-          (a: any) => a.cursoIdAsignacion === courseId,
+          (a: any) => (a.cursoIdAsignacionCuAs ?? a.cursoIdAsignacion) === courseId,
         );
-        const assignmentId = assignment ? assignment.idAsignacion : null;
+        const assignmentId = assignment ? (assignment.id ?? assignment.idAsignacion) : null;
 
         // Filtrar materiales de esta asignación
         const courseMaterials = allMaterials.filter(
@@ -193,14 +193,14 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         const mappedActivities: Activity[] = courseMaterials.map((m: any) => {
           // Buscar evaluación asociada a este material
           const evaluation = allEvaluations.find(
-            (e: any) => e.materialCuEvaluacion === m.idMaterial,
+            (e: any) => e.materialCuEvaluacion === m.id,
           );
-          const evaluationId = evaluation ? evaluation.idEvaluacion : null;
+          const evaluationId = evaluation ? evaluation.id : null;
 
           // Buscar nota si ya fue calificado
           const grade = evaluationId
             ? myGrades.find(
-                (g: any) => g.evaluacionCuNota?.idEvaluacion === evaluationId,
+                (g: any) => g.evaluacionCuNota === evaluationId,
               )
             : null;
           const status = grade ? "completed" : "pending";
@@ -226,7 +226,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           }
 
           return {
-            id: m.idMaterial.toString(),
+            id: m.id.toString(),
             name: m.tituloMaterial,
             description: m.descripcionMaterial,
             type: isQuiz ? "quiz" : "reading",
@@ -243,8 +243,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   passingScore: 12,
                 }
               : undefined,
-            bestAttemptScore: grade ? Math.round(grade.notaNota) : undefined,
-            isApproved: grade ? grade.notaNota >= 12 : undefined,
+            bestAttemptScore: grade ? Math.round(grade.calificacionNota) : undefined,
+            isApproved: grade ? grade.calificacionNota >= 12 : undefined,
           };
         });
 
@@ -258,7 +258,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           .map((enrollment: any) => {
             const s = allStudents.find(
               (student: any) =>
-                student.idEstudiante === enrollment.estudianteIdInscripcion,
+                (student.id || student.idEstudiante) === enrollment.estudianteIdInscripcion,
             );
             if (!s) return null;
 
@@ -268,7 +268,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             else if (sPoints >= 2000) sLevel = "Plata";
 
             return {
-              id: s.idEstudiante.toString(),
+              id: (s.id || s.idEstudiante).toString(),
               name: `${s.nombreEstudiante} ${s.apellidoEstudiante}`,
               email: s.correoEstudiante,
               avatar: `${s.nombreEstudiante[0]}${s.apellidoEstudiante[0]}`,
@@ -279,7 +279,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
               enrolledCourses: [id],
             };
           })
-          .filter((s: any) => s !== null);
+          .filter((s): s is Student => s !== null);
 
         setCourseStudents(mappedStudents);
 
@@ -302,7 +302,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           totalAct > 0 ? Math.round((compAct / totalAct) * 100) : 0;
 
         setCourse({
-          id: realCourse.idCurso.toString(),
+          id: (realCourse.id ?? realCourse.idCurso ?? "").toString(),
           name: realCourse.nombreCurso,
           description: realCourse.descripcionCurso,
           icon: "📚", // icono fallback
@@ -406,7 +406,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             body: JSON.stringify({
               evaluacionCuNota: evaluationId,
               estudianteNota: parseInt(user?.id || "1"),
-              notaNota: attemptData.score,
+              calificacionNota: attemptData.score,
               observacionNota: `Nota obtenida en el intento ${attemptData.attemptNumber} desde la plataforma Next.js.`,
             }),
           });

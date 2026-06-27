@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 
 interface RoleGuardProps {
   children: React.ReactNode;
-  allowedRoles: ('student' | 'teacher')[];
+  allowedRoles: ('student' | 'teacher' | 'admin')[];
 }
 
 export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
@@ -26,6 +26,8 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
         router.push('/student');
       } else if (user.role === 'teacher') {
         router.push('/teacher');
+      } else if (user.role === 'admin') {
+        router.push('/admin');
       } else {
         // Si no tiene rol, redirigir al login
         router.push('/');

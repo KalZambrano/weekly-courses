@@ -3,9 +3,9 @@ export const config = {
         login: '/login/login',
         asistentes: {
             getAll: '/asistentes/listAsistentes',
-            getOne: (id: string) => `/asistentes/findAsistenteById/${id}`,
+            getOne: (id: string) => `/asistentes/findAsistentesById/${id}`,
             create: '/asistentes/addAsistentes',
-            delete: (id: string) => `/asistentes/deleteAsistente?id=${id}`
+            delete: (id: string) => `/asistentes/deleteAsistentes?id=${id}`
         },
         cursos: {
             getAll: '/cursos/listCursos',
@@ -29,7 +29,8 @@ export const config = {
             getAll: '/materialCurso/listMaterialCurso',
             // getOne: (id: string) => `/materialCurso/findMaterialCursoById/${id}`,
             create: '/materialCurso/addMaterialCurso',
-            // delete: '/materialCurso/deleteMaterialCurso'
+            update: (id: string | number) => `/materialCurso/updateMaterialCurso/${id}`,
+            delete: (id: number) => `/materialCurso/deleteMaterialCurso?id=${id}`
         },
         inscripcionEsCu: {
             getAll: '/inscripcionEsCu/listInscripcionEsCu',
@@ -41,6 +42,7 @@ export const config = {
             getAll: '/evaluacionCurso/listEvaluacionCurso',
             // getOne: (id: string) => `/evaluacionCurso/findEvaluacionCursoById/${id}`,
             create: '/evaluacionCurso/addEvaluacionCurso',
+            update: (id: string | number) => `/evaluacionCurso/updateEvaluacionCurso/${id}`,
             // delete: '/evaluacionCurso/deleteEvaluacionCurso'
         },
         notaEvaluacion: {

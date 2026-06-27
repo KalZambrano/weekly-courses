@@ -116,7 +116,8 @@ export default function TeacherStudentsPage() {
         ]);
 
         const mapped = allSts.map((s: any) => {
-          const studentEnrollments = allEnrollments.filter((e: any) => e.estudianteIdInscripcion === s.idEstudiante);
+          const studentId = s?.id || s?.idEstudiante;
+          const studentEnrollments = studentId ? allEnrollments.filter((e: any) => e.estudianteIdInscripcion === studentId) : [];
           const totalPoints = studentEnrollments.reduce((sum: number, e: any) => sum + (e.totalPuntosInscripcion || 0), 0);
 
           let level: "Bronce" | "Plata" | "Oro" = "Bronce";
@@ -124,9 +125,9 @@ export default function TeacherStudentsPage() {
           else if (totalPoints >= 2000) level = "Plata";
 
           const studentCourses = studentEnrollments.map((enrollment: any) => {
-            const assignment = allAssignments.find((a: any) => a.idAsignacion === enrollment.asignacionIdInscripcion);
+            const assignment = allAssignments.find((a: any) => (a.id || a.idAsignacion) === enrollment.asignacionIdInscripcion);
             if (!assignment) return null;
-            const course = allCourses.find((c: any) => c.idCurso === assignment.cursoIdAsignacion);
+            const course = allCourses.find((c: any) => (c.id || c.idCurso) === (assignment.cursoIdAsignacionCuAs || assignment.cursoIdAsignacion));
             if (!course) return null;
 
             const progress = enrollment.totalPuntosInscripcion > 0 ? Math.min(100, enrollment.totalPuntosInscripcion) : 0;
@@ -140,11 +141,11 @@ export default function TeacherStudentsPage() {
             else if (lowerName.includes('prog') || lowerName.includes('code')) icon = '💻';
 
             return {
-              id: course.idCurso.toString(),
+              id: (course.id || course.idCurso).toString(),
               name: course.nombreCurso,
               icon: icon,
               progress: progress,
-              enrollmentId: enrollment.idInscripcion
+              enrollmentId: enrollment.id || enrollment.idInscripcion
             };
           }).filter(Boolean);
 
@@ -152,19 +153,24 @@ export default function TeacherStudentsPage() {
             ? Math.round(studentCourses.reduce((sum: number, c: any) => sum + c.progress, 0) / studentCourses.length)
             : 0;
 
+          const nombre = s?.nombreEstudiante || "";
+          const apellido = s?.apellidoEstudiante || "";
+          const correo = s?.correoEstudiante || "";
+          const avatarStr = nombre && apellido ? `${nombre[0]}${apellido[0]}` : "E";
+
           return {
-            id: s.idEstudiante.toString(),
-            name: `${s.nombreEstudiante} ${s.apellidoEstudiante}`,
-            email: s.correoEstudiante,
-            avatar: `${s.nombreEstudiante[0]}${s.apellidoEstudiante[0]}`,
+            id: studentId?.toString() || "",
+            name: nombre && apellido ? `${nombre} ${apellido}` : "Estudiante Sin Nombre",
+            email: correo,
+            avatar: avatarStr,
             points: totalPoints,
             level: level,
             progress: progress,
             streak: 5,
             courses: studentCourses,
-            rawNombre: s.nombreEstudiante,
-            rawApellido: s.apellidoEstudiante,
-            rawPass: s.contrasenaEstudiante
+            rawNombre: nombre,
+            rawApellido: apellido,
+            rawPass: s?.contrasenaEstudiante || ""
           };
         });
 

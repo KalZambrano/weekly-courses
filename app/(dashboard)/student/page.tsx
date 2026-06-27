@@ -74,7 +74,7 @@ export default function StudentDashboard() {
 
         // Buscar el estudiante activo en la lista real del backend
         const realStudent = allStudents.find(
-          (s: any) => s.idEstudiante.toString() === user.id,
+          (s: any) => (s?.id || s?.idEstudiante)?.toString() === user.id,
         );
 
         // 2. Obtener inscripciones
@@ -102,7 +102,7 @@ export default function StudentDashboard() {
           .map((s: any) => {
             // Sumar puntos de sus inscripciones
             const sEnrollments = enrollments.filter(
-              (e: any) => e.estudianteIdInscripcion === s.idEstudiante,
+              (e: any) => e.estudianteIdInscripcion === (s.id || s.idEstudiante),
             );
             const sPoints = sEnrollments.reduce(
               (sum: number, e: any) => sum + (e.totalPuntosInscripcion || 0),
@@ -114,9 +114,9 @@ export default function StudentDashboard() {
             else if (sPoints >= 2000) sLevel = "Plata";
 
             return {
-              id: s.idEstudiante.toString(),
-              name: `${s.nombreEstudiante} ${s.apellidoEstudiante}`,
-              avatar: `${s.nombreEstudiante[0]}${s.apellidoEstudiante[0]}`,
+              id: (s?.id || s?.idEstudiante)?.toString() || "",
+              name: s?.nombreEstudiante && s?.apellidoEstudiante ? `${s.nombreEstudiante} ${s.apellidoEstudiante}` : "Estudiante",
+              avatar: s?.nombreEstudiante && s?.apellidoEstudiante ? `${s.nombreEstudiante[0]}${s.apellidoEstudiante[0]}` : "E",
               points: sPoints,
               level: sLevel,
             };

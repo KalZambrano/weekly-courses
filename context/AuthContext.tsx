@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { fetchApi } from '@/lib/api';
 import { config } from '@/lib/config-api';
 
-type UserRole = 'student' | 'teacher' | null;
+type UserRole = 'student' | 'teacher' | 'admin' | null;
 
 interface User {
   email: string; // Lo usaremos para guardar el DNI por ahora
@@ -77,7 +77,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         email: 'student@utp.edu.pe',
         role: 'student',
         name: 'Estudiante de Prueba',
-        token: 'mock-token-123'
+        token: 'mock-token-123',
+        id: '1'
       };
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('user', JSON.stringify(userData));
@@ -98,43 +99,51 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }),
       });
 
-      if (data && data.token) {
+      const token = data.token || data.access_token;
+      if (data && token) {
           // Decodificamos el token para sacar el rol y el DNI
-          const decodedToken = decodeJWT(data.token);
+          const decodedToken = decodeJWT(token);
 
-          // Mapeamos los roles de Spring Boot a los de Next.js
-          // Si es ADMIN lo hacemos teacher, si no, student.
-          const frontendRole: UserRole = decodedToken?.role === 'ADMIN' ? 'teacher' : 'student';
-          const dni = decodedToken?.sub || emailOrDni;
+          // Mapeamos los roles del backend a los de Next.js
+          const frontendRole: UserRole = decodedToken?.rol === 'ADMIN' || decodedToken?.role === 'ADMIN' 
+            ? 'admin' 
+            : (decodedToken?.rol === 'DOCENTE' || decodedToken?.role === 'DOCENTE' || decodedToken?.rol === 'ASISTENTE' || decodedToken?.role === 'ASISTENTE' ? 'teacher' : 'student');
+          const dni = decodedToken?.sub || decodedToken?.dni || emailOrDni;
 
           let name = `Usuario ${dni}`;
           let id = dni;
 
           if (frontendRole === 'student') {
             try {
-              const studentData = await fetchApi(config.endpoints.asistentes.getOne(dni), {
-                headers: { 'Authorization': `Bearer ${data.token}` }
+              const studentId = decodedToken?.id?.toString() || dni;
+              const studentData = await fetchApi(config.endpoints.estudiantes.getOne(studentId), {
+                headers: { 'Authorization': `Bearer ${token}` }
               });
-              if (studentData && studentData.idEstudiante) {
+              if (studentData) {
                 name = `${studentData.nombreEstudiante} ${studentData.apellidoEstudiante}`;
-                id = studentData.idEstudiante.toString();
+                id = studentData.id.toString();
               } else {
                 console.warn("Student profile returned null or empty:", studentData);
               }
             } catch (e) {
-              console.error("Error fetching student profile from backend:", e);
+              console.error("Error fetching student profile from backend, using fallback:", e);
+              name = "Estudiante de Prueba";
+              id = dni;
             }
-          } else if (frontendRole === 'teacher') {
+          } else if (frontendRole === 'teacher' || frontendRole === 'admin') {
             try {
-              const assistantData = await fetchApi(config.endpoints.asistentes.getOne(dni), {
-                headers: { 'Authorization': `Bearer ${data.token}` }
+              const assistantId = decodedToken?.id?.toString() || dni;
+              const assistantData = await fetchApi(config.endpoints.asistentes.getOne(assistantId), {
+                headers: { 'Authorization': `Bearer ${token}` }
               });
               if (assistantData) {
-                name = `${assistantData.nombreUsuario} ${assistantData.apellidoUsuario}`;
-                id = assistantData.idUsuario.toString();
+                name = `${assistantData.nombreEmpleado} ${assistantData.apellidoEmpleado}`;
+                id = assistantData.id.toString();
               }
             } catch (e) {
-              console.error("Error fetching assistant profile from backend:", e);
+              console.error("Error fetching assistant profile from backend, using fallback:", e);
+              name = "Docente de Prueba";
+              id = dni;
             }
           }
 
@@ -142,13 +151,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             email: dni,
             role: frontendRole,
             name: name,
-            token: data.token,
+            token: token,
             id: id
           };
 
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('user', JSON.stringify(userData));
-          localStorage.setItem('token', data.token); // Guardamos el token para futuras peticiones
+          localStorage.setItem('token', token); // Guardamos el token para futuras peticiones
 
           setIsAuthenticated(true);
           setUser(userData);
