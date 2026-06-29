@@ -102,7 +102,7 @@ export function ActivityCard({ activity, onStart }: ActivityCardProps) {
             {activity.points} pts
           </span>
           <Badge variant="outline" className="text-xs">
-            Semana {activity.weekNumber}
+            Semana {activity.semana ?? activity.weekNumber}
           </Badge>
         </div>
 

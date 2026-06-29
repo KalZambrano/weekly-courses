@@ -14,7 +14,7 @@ import { StudentTutorial } from "@/components/tutorials/student-tutorial";
 import { useTutorial } from "@/hooks/useTutorial";
 import { RecentActivityList } from "@/components/custom/recent-activity-list";
 import { Loader2 } from "lucide-react";
-import { getAllEnrollments, getAllStudents } from "@/services/services";
+import { getAllEnrollments, getAllStudents, getAllGrades, getAllEvaluations, getAllMaterials, getAllCourses, getAllAssignments } from "@/services/services";
 import {
   currentStudent,
   recentActivities,
@@ -26,6 +26,7 @@ import {
   getProgressToNextLevel,
   getPointsToNextLevel,
   getMotivationalMessage,
+  getCurrentWeek,
 } from "@/lib/gamification";
 import { Star, Target, Flame, Sparkles, HelpCircle } from "lucide-react";
 
@@ -36,6 +37,7 @@ export default function StudentDashboard() {
   const { shouldShowTutorial, isLoading, markTutorialAsShown } =
     useTutorial("student");
   const [ranking, setRanking] = useState<any[]>([]);
+  const [recentActivitiesList, setRecentActivitiesList] = useState<any[]>([]);
   const [stats, setStats] = useState({
     completed: 0,
     pending: 12,
@@ -69,49 +71,47 @@ export default function StudentDashboard() {
           throw new Error("No user ID found, using fallback dashboard data.");
         }
 
-        // 1. Obtener la lista de todos los estudiantes para el Ranking y perfil
-        const allStudents = await getAllStudents();
+        // 1. Obtener datos transaccionales desde el Backend
+        const [
+          allStudents,
+          allEnrollments,
+          allGrades,
+          allEvaluations,
+          allMaterials,
+          allCourses,
+          allAssignments,
+        ] = await Promise.all([
+          getAllStudents(),
+          getAllEnrollments(),
+          getAllGrades(),
+          getAllEvaluations(),
+          getAllMaterials(),
+          getAllCourses(),
+          getAllAssignments(),
+        ]);
+
+        const studentId = parseInt(user.id);
 
         // Buscar el estudiante activo en la lista real del backend
         const realStudent = allStudents.find(
           (s: any) => (s?.id || s?.idEstudiante)?.toString() === user.id,
         );
 
-        // 2. Obtener inscripciones
-        const enrollments = await getAllEnrollments();
+        // Puntos acumulados reales del estudiante
+        const points = realStudent ? (realStudent.puntos ?? realStudent.points ?? 0) : 0;
 
-        // Filtrar las inscripciones del estudiante actual
-        const studentId = parseInt(user.id);
-        const myEnrollments = enrollments.filter(
-          (e: any) => e.estudianteIdInscripcion === studentId,
-        );
-
-        // Calcular puntos y progreso general
-        const points = myEnrollments.reduce(
-          (sum: number, e: any) => sum + (e.totalPuntosInscripcion || 0),
-          0,
-        );
-
-        // Determinar nivel basado en puntos (gamification frontend)
+        // Determinar nivel basado en puntos (gamification)
         let level: "Bronce" | "Plata" | "Oro" = "Bronce";
         if (points >= 3000) level = "Oro";
-        else if (points >= 2000) level = "Plata";
+        else if (points >= 1500) level = "Plata";
 
-        // Ordenar estudiantes para el ranking
+        // Ordenar estudiantes para el ranking por puntos reales del estudiante
         const sortedRanking = allStudents
           .map((s: any) => {
-            // Sumar puntos de sus inscripciones
-            const sEnrollments = enrollments.filter(
-              (e: any) => e.estudianteIdInscripcion === (s.id || s.idEstudiante),
-            );
-            const sPoints = sEnrollments.reduce(
-              (sum: number, e: any) => sum + (e.totalPuntosInscripcion || 0),
-              0,
-            );
-
+            const sPoints = s.puntos ?? s.points ?? 0;
             let sLevel: "Bronce" | "Plata" | "Oro" = "Bronce";
             if (sPoints >= 3000) sLevel = "Oro";
-            else if (sPoints >= 2000) sLevel = "Plata";
+            else if (sPoints >= 1500) sLevel = "Plata";
 
             return {
               id: (s?.id || s?.idEstudiante)?.toString() || "",
@@ -121,9 +121,62 @@ export default function StudentDashboard() {
               level: sLevel,
             };
           })
-          .sort((a: any, b: any) => b.points - a.points);
+          .sort((a: any, b: any) => b.points - a.points)
+          .map((s: any, idx: number) => ({ ...s, position: idx + 1 }));
 
         setRanking(sortedRanking.length > 0 ? sortedRanking : mockRanking);
+
+        // Filtrar las inscripciones y materiales del estudiante actual para stats
+        const myEnrollments = allEnrollments.filter(
+          (e: any) => e.estudianteIdInscripcion === studentId,
+        );
+
+        const myCourseAssignmentIds = myEnrollments.map((e: any) => e.asignacionIdInscripcion);
+        const myMaterials = allMaterials.filter((m: any) => myCourseAssignmentIds.includes(m.asignacionCuAsIdMaterial));
+        
+        // Obtener notas del estudiante (en la base de datos de sqlite se guardó estudianteNota como el ID del estudiante en el JSON de respuesta)
+        const myGrades = allGrades.filter((g: any) => g.estudianteNota === studentId);
+
+        // Calcular estadísticas reales
+        const completedCount = myGrades.length;
+        const pendingCount = Math.max(0, myMaterials.length - completedCount);
+
+        setStats({
+          completed: completedCount,
+          pending: pendingCount,
+          inProgress: 0,
+        });
+
+        // Calcular racha de semanas consecutivas basada en entregas reales del estudiante
+        const semanasEntregadas = Array.from(
+          new Set(
+            myGrades
+              .map((g: any) => {
+                const evaluation = allEvaluations.find((e: any) => e.id === g.evaluacionCuNota);
+                return evaluation ? evaluation.semana : null;
+              })
+              .filter((w): w is number => w !== null)
+          )
+        );
+
+        const currentWeekNumber = getCurrentWeek();
+        let calculatedStreak = 0;
+
+        if (semanasEntregadas.includes(currentWeekNumber)) {
+          let checkWeek = currentWeekNumber;
+          while (semanasEntregadas.includes(checkWeek)) {
+            calculatedStreak++;
+            checkWeek--;
+          }
+        } else if (semanasEntregadas.includes(currentWeekNumber - 1)) {
+          let checkWeek = currentWeekNumber - 1;
+          while (semanasEntregadas.includes(checkWeek)) {
+            calculatedStreak++;
+            checkWeek--;
+          }
+        } else if (semanasEntregadas.length > 0) {
+          calculatedStreak = 1;
+        }
 
         // Setear datos de perfil
         setStudentData({
@@ -136,35 +189,31 @@ export default function StudentDashboard() {
           points: points,
           level: level,
           progress:
-            myEnrollments.length > 0
-              ? Math.round(
-                  myEnrollments.reduce(
-                    (sum: number, e: any) =>
-                      sum +
-                      (e.totalPuntosInscripcion > 100
-                        ? 100
-                        : e.totalPuntosInscripcion),
-                    0,
-                  ) / myEnrollments.length,
-                )
+            myMaterials.length > 0
+              ? Math.round((completedCount / myMaterials.length) * 100)
               : 0,
-          streak: realStudent ? 5 : 0, // mock racha para conservar visuales
+          streak: calculatedStreak > 0 ? calculatedStreak : 1, // Si solo tiene entregas en la semana actual o no tiene se inicializa en 1 si tiene entregas, de lo contrario 1 por defecto por visuales
         });
 
-        // Setear estadísticas del resumen de actividades
-        setStats({
-          completed: myEnrollments.filter(
-            (e: any) => e.totalPuntosInscripcion >= 100,
-          ).length,
-          pending:
-            12 -
-            myEnrollments.filter((e: any) => e.totalPuntosInscripcion >= 100)
-              .length,
-          inProgress: myEnrollments.filter(
-            (e: any) =>
-              e.totalPuntosInscripcion > 0 && e.totalPuntosInscripcion < 100,
-          ).length,
+        // Actividades recientes reales del estudiante basadas en sus notas
+        const realRecentActivities = myGrades.map((g: any) => {
+          // evaluacionCuNota apunta al ID de la evaluación en el JSON respuesta
+          const evaluation = allEvaluations.find((e: any) => e.id === g.evaluacionCuNota);
+          const material = evaluation ? allMaterials.find((m: any) => m.id === evaluation.materialCuEvaluacion) : null;
+          const assignment = material ? allAssignments.find((a: any) => a.id === material.asignacionCuAsIdMaterial) : null;
+          const course = assignment ? allCourses.find((c: any) => c.id === (assignment.cursoIdAsignacionCuAs ?? assignment.cursoIdAsignacion)) : null;
+
+          return {
+            id: g.id.toString(),
+            courseName: course ? course.nombreCurso : "Refuerzo Escolar",
+            activityName: evaluation ? evaluation.tituloEvaluacion : "Quiz Completado",
+            type: "quiz" as const,
+            points: Math.round(g.calificacionNota),
+            completedAt: new Date().toISOString()
+          };
         });
+
+        setRecentActivitiesList(realRecentActivities.length > 0 ? realRecentActivities : recentActivities.slice(0, 5));
       } catch (err) {
         console.error(
           "Error loading student dashboard data, loading fallback mock data:",
@@ -313,7 +362,7 @@ export default function StudentDashboard() {
         {/* Right Column - Activity Summary */}
         <div className="space-y-8">
           <section className="student-recent-activity">
-            <RecentActivityList activities={recentActivities.slice(0, 5)} />
+            <RecentActivityList activities={recentActivitiesList} />
           </section>
 
           {/* Quick Stats Card */}

@@ -232,7 +232,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             type: isQuiz ? "quiz" : "reading",
             duration: "15 min",
             points: evaluation ? Math.round(evaluation.puntosEvaluacion) : 100,
-            weekNumber: 1, // Por defecto Semana 1
+            weekNumber: m.semana || 1, // Carga la semana real
+            semana: m.semana || 1, // Carga la semana real
             status: status,
             url: m.urlMaterial || "#",
             backendEvaluationId: evaluationId, // Guardar ID del backend
@@ -262,7 +263,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             );
             if (!s) return null;
 
-            const sPoints = enrollment.totalPuntosInscripcion || 0;
+            const sPoints = s.puntos ?? s.points ?? 0;
             let sLevel: "Bronce" | "Plata" | "Oro" = "Bronce";
             if (sPoints >= 3000) sLevel = "Oro";
             else if (sPoints >= 2000) sLevel = "Plata";

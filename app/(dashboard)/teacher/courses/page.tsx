@@ -139,6 +139,7 @@ export default function TeacherCoursesPage() {
   const [editMaterialDesc, setEditMaterialDesc] = useState("");
   const [editMaterialType, setEditMaterialType] = useState("PDF");
   const [editMaterialUrl, setEditMaterialUrl] = useState("");
+  const [editMaterialSemana, setEditMaterialSemana] = useState<number>(1);
   const [editMaterialAsignacionId, setEditMaterialAsignacionId] = useState<
     number | null
   >(null);
@@ -492,6 +493,7 @@ export default function TeacherCoursesPage() {
           estadoMaterial: true,
           urlMaterial: editMaterialUrl || "#",
           fechaSubidaMaterial: new Date().toISOString().split("T")[0],
+          semana: editMaterialSemana,
         }),
       });
 
@@ -1124,6 +1126,7 @@ export default function TeacherCoursesPage() {
                                       ];
                                     }
                                     setQuizQuestions(parsedQuestions);
+                                    setQuizSemana(m.semana || 1);
                                     setEditQuizMaterialId(m.id);
                                     setEditQuizEvaluationId(evaluation ? evaluation.id : null);
                                     setSelectedCourse(course);
@@ -1134,6 +1137,7 @@ export default function TeacherCoursesPage() {
                                     setEditMaterialDesc(m.descripcionMaterial);
                                     setEditMaterialType(m.tipoMaterial);
                                     setEditMaterialUrl(m.urlMaterial);
+                                    setEditMaterialSemana(m.semana || 1);
                                     setEditMaterialAsignacionId(
                                       m.asignacionCuAsIdMaterial,
                                     );
@@ -1626,22 +1630,42 @@ export default function TeacherCoursesPage() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="editMatType">Tipo de Material</Label>
-              <Select
-                value={editMaterialType}
-                onValueChange={setEditMaterialType}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PDF">Documento PDF</SelectItem>
-                  <SelectItem value="Diapositivas">Diapositivas PPT</SelectItem>
-                  <SelectItem value="Video">Video / Enlace Externo</SelectItem>
-                  <SelectItem value="Quiz">Quiz Interactivo</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editMatType">Tipo de Material</Label>
+                <Select
+                  value={editMaterialType}
+                  onValueChange={setEditMaterialType}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PDF">Documento PDF</SelectItem>
+                    <SelectItem value="Diapositivas">Diapositivas PPT</SelectItem>
+                    <SelectItem value="Video">Video / Enlace Externo</SelectItem>
+                    <SelectItem value="Quiz">Quiz Interactivo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editMatSemana">Semana</Label>
+                <Select
+                  value={editMaterialSemana.toString()}
+                  onValueChange={(val) => setEditMaterialSemana(parseInt(val))}
+                >
+                  <SelectTrigger id="editMatSemana">
+                    <SelectValue placeholder="Semana" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 18 }, (_, i) => i + 1).map((w) => (
+                      <SelectItem key={w} value={w.toString()}>
+                        Semana {w}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="editMatUrl">URL del Recurso</Label>

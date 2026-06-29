@@ -50,6 +50,7 @@ export interface Activity {
   points: number
   duration: string
   weekNumber: number
+  semana?: number
   completedAt?: string
   description?: string
   pointsAwarded?: number

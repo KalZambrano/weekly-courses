@@ -27,8 +27,7 @@ export default function RankingPage() {
 
         // Map and sum points
         const mappedRanking = allStudents.map((s: any) => {
-          const studentEnrollments = allEnrollments.filter((e: any) => e.estudianteIdInscripcion === (s.id || s.idEstudiante));
-          const totalPoints = studentEnrollments.reduce((sum: number, e: any) => sum + (e.totalPuntosInscripcion || 0), 0);
+          const totalPoints = s.puntos ?? s.points ?? 0;
 
           let level: "Bronce" | "Plata" | "Oro" = "Bronce";
           if (totalPoints >= 3000) level = "Oro";
