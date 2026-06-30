@@ -26,7 +26,7 @@ interface NavItem {
 }
 
 interface DashboardSidebarProps {
-  role: 'student' | 'teacher'
+  role: 'student' | 'teacher' | 'admin'
 }
 
 const studentNavItems: NavItem[] = [
@@ -42,12 +42,23 @@ const teacherNavItems: NavItem[] = [
   { label: 'Métricas', href: '/teacher/metrics', icon: <BarChart3 className="size-5" /> },
 ]
 
+const adminNavItems: NavItem[] = [
+  { label: 'Dashboard', href: '/admin', icon: <LayoutDashboard className="size-5" /> },
+  { label: 'Usuarios', href: '/admin/users', icon: <Users className="size-5" /> },
+  { label: 'Cursos', href: '/admin/courses', icon: <BookOpen className="size-5" /> },
+  { label: 'Asignaciones', href: '/admin/assignments', icon: <BarChart3 className="size-5" /> },
+]
+
 export function DashboardSidebar({ role }: DashboardSidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   
-  const navItems = role === 'student' ? studentNavItems : teacherNavItems
+  const navItems = role === 'student' 
+    ? studentNavItems 
+    : role === 'teacher' 
+    ? teacherNavItems 
+    : adminNavItems
   const otherRole = role === 'student' ? 'teacher' : 'student'
   const otherRoleLabel = role === 'student' ? 'Vista Docente' : 'Vista Estudiante'
   
@@ -99,20 +110,22 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
       </nav>
       
       {/* Role Switcher */}
-      <div className="border-t border-sidebar-border p-3">
-        <Link href={`/${otherRole}`}>
-          <Button 
-            variant="ghost" 
-            className={cn(
-              "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-              collapsed && "justify-center px-2"
-            )}
-          >
-            {role === 'student' ? <Users className="size-5" /> : <GraduationCap className="size-5" />}
-            {!collapsed && <span className="ml-3">{otherRoleLabel}</span>}
-          </Button>
-        </Link>
-      </div>
+      {user?.role !== 'student' && user?.role !== 'admin' && (
+        <div className="border-t border-sidebar-border p-3">
+          <Link href={`/${otherRole}`}>
+            <Button 
+              variant="ghost" 
+              className={cn(
+                "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                collapsed && "justify-center px-2"
+              )}
+            >
+              {role === 'student' ? <Users className="size-5" /> : <GraduationCap className="size-5" />}
+              {!collapsed && <span className="ml-3">{otherRoleLabel}</span>}
+            </Button>
+          </Link>
+        </div>
+      )}
       
       {/* Logout */}
       <div className="border-t border-sidebar-border p-3">

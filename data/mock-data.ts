@@ -50,14 +50,16 @@ export interface Activity {
   points: number
   duration: string
   weekNumber: number
+  semana?: number
   completedAt?: string
   description?: string
   pointsAwarded?: number
+  backendEvaluationId?: number
   // Quiz specific
   quiz?: {
     questions: QuizQuestion[]
     maxAttempts: number
-    passingScore: 12
+    passingScore: number
   }
   attempts?: QuizAttempt[]
   bestAttemptScore?: number

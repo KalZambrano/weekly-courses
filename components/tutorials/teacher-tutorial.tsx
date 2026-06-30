@@ -16,8 +16,7 @@ export function TeacherTutorial({ onTutorialEnd }: TeacherTutorialProps) {
     const driverObj = driver({
       showProgress: true,
       allowClose: true,
-      overlayClickNext: true,
-      onDestroy: () => {
+      onDestroyed: () => {
         onTutorialEnd?.()
       },
       steps: [

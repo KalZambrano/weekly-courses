@@ -24,7 +24,7 @@ export function WeeklyActivities({ activities, onActivityStart }: WeeklyActiviti
     const grouped: Record<number, Activity[]> = {}
     
     for (let week = 1; week <= 18; week++) {
-      grouped[week] = activities.filter(a => a.weekNumber === week).sort((a, b) => {
+      grouped[week] = activities.filter(a => (a.semana ?? a.weekNumber) === week).sort((a, b) => {
         // Sort by: in-progress first, then completed, then pending
         const statusOrder = { 'in-progress': 0, 'completed': 1, 'pending': 2 }
         return statusOrder[a.status] - statusOrder[b.status]

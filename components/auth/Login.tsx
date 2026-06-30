@@ -41,6 +41,8 @@ export default function Login() {
         const parsedUser = JSON.parse(savedUser);
         if (parsedUser.role === 'teacher') {
           router.push('/teacher');
+        } else if (parsedUser.role === 'admin') {
+          router.push('/admin');
         } else {
           router.push('/student');
         }
@@ -152,26 +154,39 @@ export default function Login() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-10 rounded-xl border-slate-300 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-700 transition-all cursor-pointer text-left justify-start"
-                  onClick={() => fillCredentials('student@utp.edu.pe', 'student123')}
+                  className="w-full h-11 rounded-xl border-slate-300 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-700 transition-all cursor-pointer text-left justify-start"
+                  onClick={() => fillCredentials('87654321', '12345')}
                 >
                   <User className="h-4 w-4 mr-2 text-blue-600" />
                   <div className="flex-1">
-                    <div className="text-sm font-medium">Estudiante (Mock)</div>
-                    <div className="text-xs text-slate-500">student@utp.edu.pe</div>
+                    <div className="text-sm font-medium">Administrador: Zaiko Tsakio</div>
+                    <div className="text-xs text-slate-500">DNI: 87654321 / Clave: 12345</div>
                   </div>
                 </Button>
 
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-10 rounded-xl border-slate-300 hover:bg-green-50 hover:border-green-300 text-slate-700 hover:text-green-700 transition-all cursor-pointer text-left justify-start"
-                  onClick={() => fillCredentials('12345678', 'admin123')} // CAMBIO 4: Credenciales reales del backend
+                  className="w-full h-11 rounded-xl border-slate-300 hover:bg-green-50 hover:border-green-300 text-slate-700 hover:text-green-700 transition-all cursor-pointer text-left justify-start"
+                  onClick={() => fillCredentials('11223344', '12345')}
                 >
                   <User className="h-4 w-4 mr-2 text-green-600" />
                   <div className="flex-1">
-                    <div className="text-sm font-medium">Profesor (Backend Real)</div>
-                    <div className="text-xs text-slate-500">DNI: 12345678</div>
+                    <div className="text-sm font-medium">Docente: Juan Pérez</div>
+                    <div className="text-xs text-slate-500">DNI: 11223344 / Clave: 12345</div>
+                  </div>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11 rounded-xl border-slate-300 hover:bg-purple-50 hover:border-purple-300 text-slate-700 hover:text-purple-700 transition-all cursor-pointer text-left justify-start"
+                  onClick={() => fillCredentials('55555555', 'student123')}
+                >
+                  <User className="h-4 w-4 mr-2 text-purple-600" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Estudiante: Estudiante Mock</div>
+                    <div className="text-xs text-slate-500">DNI: 55555555 / Clave: student123</div>
                   </div>
                 </Button>
               </div>

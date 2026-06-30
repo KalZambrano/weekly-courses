@@ -36,8 +36,8 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
   const StatusIcon = status.icon
   
   const currentWeek = getCurrentWeek()
-  const isCurrentWeekActivity = activity.weekNumber === currentWeek
-  const isPastWeek = activity.weekNumber < currentWeek
+  const isCurrentWeekActivity = (activity.semana ?? activity.weekNumber) === currentWeek
+  const isPastWeek = (activity.semana ?? activity.weekNumber) < currentWeek
   const multiplierInfo = getDayMultiplierInfo()
   const { points: calculatedPoints } = calculatePointsWithMultiplier(activity.points, new Date())
   const dayName = getDayName()
@@ -75,7 +75,7 @@ export function ActivityItem({ activity, onStart }: ActivityItemProps) {
             {activity.duration}
           </span>
           <span>|</span>
-          <span className="text-xs">Semana {activity.weekNumber}</span>
+          <span className="text-xs">Semana {activity.semana ?? activity.weekNumber}</span>
           {isCurrentWeekActivity && !activity.completedAt && (
             <>
               <span>|</span>

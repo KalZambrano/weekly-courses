@@ -1,6 +1,20 @@
-//weekly-courses/app/page.tsx
-import { redirect } from 'next/navigation'
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
-  redirect('/student')
+  const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === "teacher") {
+      router.push("/teacher");
+    } else {
+      router.push("/student");
+    }
+  }, [user, router]);
+
+  return null;
 }
