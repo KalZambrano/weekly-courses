@@ -115,6 +115,28 @@ export default function AdminCoursesPage() {
   ])
   const [submittingQuiz, setSubmittingQuiz] = useState(false)
 
+  // Estados de error para validaciones visuales
+  const [errCreateCourse, setErrCreateCourse] = useState<any>({})
+  const [errEditCourse, setErrEditCourse] = useState<any>({})
+  const [errAddMaterial, setErrAddMaterial] = useState<any>({})
+  const [errCreateQuiz, setErrCreateQuiz] = useState<any>({})
+
+  useEffect(() => {
+    if (!isCreateOpen) setErrCreateCourse({})
+  }, [isCreateOpen])
+
+  useEffect(() => {
+    if (!isEditOpen) setErrEditCourse({})
+  }, [isEditOpen])
+
+  useEffect(() => {
+    if (!isAddMaterialOpen) setErrAddMaterial({})
+  }, [isAddMaterialOpen])
+
+  useEffect(() => {
+    if (!isCreateQuizOpen) setErrCreateQuiz({})
+  }, [isCreateQuizOpen])
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
@@ -141,7 +163,18 @@ export default function AdminCoursesPage() {
 
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!courseName.trim() || !courseDesc.trim() || !courseCredits) return
+    setErrCreateCourse({})
+    const newErrors: any = {}
+    if (!courseName.trim()) newErrors.courseName = "El nombre del curso es obligatorio."
+    if (!courseDesc.trim()) newErrors.courseDesc = "La descripción del curso es obligatoria."
+    if (!courseCredits || parseInt(courseCredits) <= 0) newErrors.courseCredits = "Los créditos deben ser mayores que 0."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrCreateCourse(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
+      return
+    }
+
     setSubmittingCourse(true)
 
     try {
@@ -172,6 +205,7 @@ export default function AdminCoursesPage() {
   }
 
   const openEditCourse = (c: any) => {
+    setErrEditCourse({})
     setEditCourseId(c.id)
     setEditCourseName(c.nombreCurso)
     setEditCourseDesc(c.descripcionCurso)
@@ -181,7 +215,18 @@ export default function AdminCoursesPage() {
 
   const handleUpdateCourse = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editCourseId || !editCourseName.trim() || !editCourseDesc.trim() || !editCourseCredits) return
+    setErrEditCourse({})
+    const newErrors: any = {}
+    if (!editCourseName.trim()) newErrors.editCourseName = "El nombre del curso es obligatorio."
+    if (!editCourseDesc.trim()) newErrors.editCourseDesc = "La descripción del curso es obligatoria."
+    if (!editCourseCredits || parseInt(editCourseCredits) <= 0) newErrors.editCourseCredits = "Los créditos deben ser mayores que 0."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrEditCourse(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
+      return
+    }
+
     setUpdatingCourse(true)
 
     try {
@@ -215,7 +260,20 @@ export default function AdminCoursesPage() {
   // Métodos de Contenido
   const handleAddMaterial = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedCourse || !materialTitle.trim() || !materialDesc.trim()) return
+    setErrAddMaterial({})
+    const newErrors: any = {}
+    if (!materialTitle.trim()) newErrors.materialTitle = "El título es obligatorio."
+    if (!materialDesc.trim()) newErrors.materialDesc = "La descripción es obligatoria."
+    if ((materialType === 'Video' || materialType === 'Link') && !materialUrl.trim()) {
+      newErrors.materialUrl = "La URL del material es obligatoria para este tipo."
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrAddMaterial(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
+      return
+    }
+
     setSubmittingMaterial(true)
 
     try {
@@ -297,7 +355,50 @@ export default function AdminCoursesPage() {
 
   const handleCreateQuiz = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedCourse || !quizTitle.trim()) return
+    setErrCreateQuiz({})
+    const newErrors: any = {}
+    if (!quizTitle.trim()) newErrors.quizTitle = "El título del quiz es obligatorio."
+    if (!quizPoints || quizPoints <= 0) newErrors.quizPoints = "Los puntos deben ser mayores que 0."
+
+    const questionsErrors: any[] = []
+    let hasQuestionErrors = false
+    quizQuestions.forEach((q, idx) => {
+      const qErr: any = {}
+      if (!q.question.trim()) {
+        qErr.question = "El enunciado de la pregunta es obligatorio."
+        hasQuestionErrors = true
+      }
+      const optErrs: string[] = []
+      q.options.forEach((opt, optIdx) => {
+        if (!opt.trim()) {
+          optErrs[optIdx] = "La opción no puede estar vacía."
+          hasQuestionErrors = true
+        } else {
+          optErrs[optIdx] = ""
+        }
+      })
+      qErr.options = optErrs
+      if (!q.topic.trim()) {
+        qErr.topic = "El tema es obligatorio."
+        hasQuestionErrors = true
+      }
+      if (!q.explanation.trim()) {
+        qErr.explanation = "La explicación es obligatoria."
+        hasQuestionErrors = true
+      }
+      questionsErrors[idx] = qErr
+    })
+
+    if (hasQuestionErrors) {
+      newErrors.questions = questionsErrors
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrCreateQuiz(newErrors)
+      toast.error("Por favor completa las preguntas correctamente.")
+      return
+    }
+
     setSubmittingQuiz(true)
 
     try {
@@ -633,8 +734,9 @@ export default function AdminCoursesPage() {
                 value={courseName}
                 onChange={(e) => setCourseName(e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateCourse.courseName ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
               />
+              {errCreateCourse.courseName && <p className="text-red-500 text-xs">{errCreateCourse.courseName}</p>}
             </div>
 
             <div className="space-y-2">
@@ -645,8 +747,9 @@ export default function AdminCoursesPage() {
                 value={courseDesc}
                 onChange={(e) => setCourseDesc(e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus-visible:ring-blue-205 min-h-[80px]"
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-205 min-h-[80px] ${errCreateCourse.courseDesc ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
               />
+              {errCreateCourse.courseDesc && <p className="text-red-500 text-xs">{errCreateCourse.courseDesc}</p>}
             </div>
 
             <div className="space-y-2">
@@ -661,9 +764,10 @@ export default function AdminCoursesPage() {
                   value={courseCredits}
                   onChange={(e) => setCourseCredits(e.target.value.replace(/\D/g, ''))}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateCourse.courseCredits ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errCreateCourse.courseCredits && <p className="text-red-500 text-xs">{errCreateCourse.courseCredits}</p>}
             </div>
 
             <DialogFooter className="pt-4">
@@ -715,8 +819,9 @@ export default function AdminCoursesPage() {
                 value={editCourseName}
                 onChange={(e) => setEditCourseName(e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditCourse.editCourseName ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
               />
+              {errEditCourse.editCourseName && <p className="text-red-500 text-xs">{errEditCourse.editCourseName}</p>}
             </div>
 
             <div className="space-y-2">
@@ -726,8 +831,9 @@ export default function AdminCoursesPage() {
                 value={editCourseDesc}
                 onChange={(e) => setEditCourseDesc(e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus-visible:ring-blue-205 min-h-[80px]"
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-205 min-h-[80px] ${errEditCourse.editCourseDesc ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
               />
+              {errEditCourse.editCourseDesc && <p className="text-red-500 text-xs">{errEditCourse.editCourseDesc}</p>}
             </div>
 
             <div className="space-y-2">
@@ -738,8 +844,9 @@ export default function AdminCoursesPage() {
                 value={editCourseCredits}
                 onChange={(e) => setEditCourseCredits(e.target.value.replace(/\D/g, ''))}
                 required
-                className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditCourse.editCourseCredits ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
               />
+              {errEditCourse.editCourseCredits && <p className="text-red-500 text-xs">{errEditCourse.editCourseCredits}</p>}
             </div>
 
             <DialogFooter className="pt-4">
@@ -792,20 +899,22 @@ export default function AdminCoursesPage() {
                 value={materialTitle}
                 onChange={(e) => setMaterialTitle(e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errAddMaterial.materialTitle ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
               />
+              {errAddMaterial.materialTitle && <p className="text-red-500 text-xs">{errAddMaterial.materialTitle}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="mat-desc" className="text-slate-650 font-medium">Descripción</Label>
+              <Label htmlFor="mat-desc" className="text-slate-655 font-medium">Descripción</Label>
               <Input
                 id="mat-desc"
                 placeholder="Ej. Introducción y teoría elemental sobre vectores"
                 value={materialDesc}
                 onChange={(e) => setMaterialDesc(e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errAddMaterial.materialDesc ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
               />
+              {errAddMaterial.materialDesc && <p className="text-red-500 text-xs">{errAddMaterial.materialDesc}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -832,9 +941,10 @@ export default function AdminCoursesPage() {
                     placeholder="http://example.com/pdf"
                     value={materialUrl}
                     onChange={(e) => setMaterialUrl(e.target.value)}
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errAddMaterial.materialUrl ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errAddMaterial.materialUrl && <p className="text-red-500 text-xs">{errAddMaterial.materialUrl}</p>}
               </div>
             </div>
 
@@ -889,8 +999,9 @@ export default function AdminCoursesPage() {
                   value={quizTitle}
                   onChange={(e) => setQuizTitle(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateQuiz.quizTitle ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errCreateQuiz.quizTitle && <p className="text-red-500 text-xs">{errCreateQuiz.quizTitle}</p>}
               </div>
 
               <div className="space-y-2">
@@ -901,8 +1012,9 @@ export default function AdminCoursesPage() {
                   value={quizPoints}
                   onChange={(e) => setQuizPoints(parseInt(e.target.value) || 20)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-205"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-205 ${errCreateQuiz.quizPoints ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errCreateQuiz.quizPoints && <p className="text-red-500 text-xs">{errCreateQuiz.quizPoints}</p>}
               </div>
             </div>
 
@@ -924,91 +1036,101 @@ export default function AdminCoursesPage() {
                 </Button>
               </div>
 
-              {quizQuestions.map((q, qIndex) => (
-                <div key={qIndex} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-4 relative">
-                  <div className="absolute top-4 right-4">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      disabled={quizQuestions.length === 1}
-                      onClick={() => handleRemoveQuestionField(qIndex)}
-                      className="h-7 w-7 text-slate-400 hover:text-red-650"
-                    >
-                      <MinusCircle className="size-4" />
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2 pr-8">
-                    <Label className="text-slate-600 font-bold text-xs">Pregunta #{qIndex + 1}</Label>
-                    <Input
-                      placeholder="Escribe la enunciado de la pregunta..."
-                      value={q.question}
-                      onChange={(e) => handleQuestionTextChange(qIndex, e.target.value)}
-                      required
-                      className="rounded-xl bg-white border-slate-200"
-                    />
-                  </div>
-
-                  {/* Options */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {q.options.map((option, oIndex) => (
-                      <div key={oIndex} className="space-y-1">
-                        <Label className="text-slate-500 text-xs">Opción {oIndex + 1}</Label>
-                        <Input
-                          placeholder={`Opción ${oIndex + 1}`}
-                          value={option}
-                          onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
-                          required
-                          className="rounded-xl bg-white border-slate-200"
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-slate-600 font-medium text-xs">Opción Correcta</Label>
-                      <Select 
-                        value={q.correctAnswer.toString()} 
-                        onValueChange={(v) => handleCorrectAnswerChange(qIndex, parseInt(v))}
+              {quizQuestions.map((q, qIndex) => {
+                const qErr = errCreateQuiz.questions?.[qIndex] || {}
+                return (
+                  <div key={qIndex} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-4 relative">
+                    <div className="absolute top-4 right-4">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={quizQuestions.length === 1}
+                        onClick={() => handleRemoveQuestionField(qIndex)}
+                        className="h-7 w-7 text-slate-400 hover:text-red-650"
                       >
-                        <SelectTrigger className="rounded-xl bg-white border-slate-200">
-                          <SelectValue placeholder="Opción 1" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">Opción 1 (A)</SelectItem>
-                          <SelectItem value="1">Opción 2 (B)</SelectItem>
-                          <SelectItem value="2">Opción 3 (C)</SelectItem>
-                          <SelectItem value="3">Opción 4 (D)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <MinusCircle className="size-4" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2 pr-8">
+                      <Label className="text-slate-600 font-bold text-xs">Pregunta #{qIndex + 1}</Label>
+                      <Input
+                        placeholder="Escribe la enunciado de la pregunta..."
+                        value={q.question}
+                        onChange={(e) => handleQuestionTextChange(qIndex, e.target.value)}
+                        required
+                        className={`rounded-xl bg-white border-slate-200 ${qErr.question ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
+                      />
+                      {qErr.question && <p className="text-red-500 text-xs">{qErr.question}</p>}
+                    </div>
+
+                    {/* Options */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {q.options.map((option, oIndex) => {
+                        const optErr = qErr.options?.[oIndex]
+                        return (
+                          <div key={oIndex} className="space-y-1">
+                            <Label className="text-slate-500 text-xs">Opción {oIndex + 1}</Label>
+                            <Input
+                              placeholder={`Opción ${oIndex + 1}`}
+                              value={option}
+                              onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
+                              required
+                              className={`rounded-xl bg-white border-slate-200 ${optErr ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
+                            />
+                            {optErr && <p className="text-red-500 text-xs">{optErr}</p>}
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-slate-600 font-medium text-xs">Opción Correcta</Label>
+                        <Select 
+                          value={q.correctAnswer.toString()} 
+                          onValueChange={(v) => handleCorrectAnswerChange(qIndex, parseInt(v))}
+                        >
+                          <SelectTrigger className="rounded-xl bg-white border-slate-200">
+                            <SelectValue placeholder="Opción 1" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Opción 1 (A)</SelectItem>
+                            <SelectItem value="1">Opción 2 (B)</SelectItem>
+                            <SelectItem value="2">Opción 3 (C)</SelectItem>
+                            <SelectItem value="3">Opción 4 (D)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-slate-600 font-medium text-xs">Tema / Tema de estudio</Label>
+                        <Input
+                          placeholder="Ej. Cinemática"
+                          value={q.topic}
+                          onChange={(e) => handleTopicChange(qIndex, e.target.value)}
+                          required
+                          className={`rounded-xl bg-white border-slate-200 ${qErr.topic ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
+                        />
+                        {qErr.topic && <p className="text-red-500 text-xs">{qErr.topic}</p>}
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-slate-600 font-medium text-xs">Tema / Tema de estudio</Label>
+                      <Label className="text-slate-655 text-xs">Retroalimentación / Explicación</Label>
                       <Input
-                        placeholder="Ej. Cinemática"
-                        value={q.topic}
-                        onChange={(e) => handleTopicChange(qIndex, e.target.value)}
+                        placeholder="Explica por qué es la alternativa correcta..."
+                        value={q.explanation}
+                        onChange={(e) => handleExplanationChange(qIndex, e.target.value)}
                         required
-                        className="rounded-xl bg-white border-slate-200"
+                        className={`rounded-xl bg-white border-slate-200 ${qErr.explanation ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                       />
+                      {qErr.explanation && <p className="text-red-500 text-xs">{qErr.explanation}</p>}
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-slate-655 text-xs">Retroalimentación / Explicación</Label>
-                    <Input
-                      placeholder="Explica por qué es la alternativa correcta..."
-                      value={q.explanation}
-                      onChange={(e) => handleExplanationChange(qIndex, e.target.value)}
-                      required
-                      className="rounded-xl bg-white border-slate-200"
-                    />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <DialogFooter className="pt-4 border-t border-slate-100">

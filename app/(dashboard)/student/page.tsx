@@ -90,15 +90,18 @@ export default function StudentDashboard() {
           getAllAssignments(),
         ]);
 
-        const studentId = parseInt(user.id);
+        const isTeacherView = user.role === 'teacher';
+        const studentId = isTeacherView ? -999 : parseInt(user.id);
 
         // Buscar el estudiante activo en la lista real del backend
-        const realStudent = allStudents.find(
-          (s: any) => (s?.id || s?.idEstudiante)?.toString() === user.id,
-        );
+        const realStudent = isTeacherView
+          ? null
+          : allStudents.find(
+              (s: any) => (s?.id || s?.idEstudiante)?.toString() === user.id,
+            );
 
-        // Puntos acumulados reales del estudiante
-        const points = realStudent ? (realStudent.puntos ?? realStudent.points ?? 0) : 0;
+        // Puntos acumulados reales del estudiante (o valor simulado a 0 si es vista docente)
+        const points = isTeacherView ? 0 : (realStudent ? (realStudent.puntos ?? realStudent.points ?? 0) : 0);
 
         // Determinar nivel basado en puntos (gamification)
         let level: "Bronce" | "Plata" | "Oro" = "Bronce";
@@ -142,8 +145,8 @@ export default function StudentDashboard() {
         const pendingCount = Math.max(0, myMaterials.length - completedCount);
 
         setStats({
-          completed: completedCount,
-          pending: pendingCount,
+          completed: isTeacherView ? 0 : completedCount,
+          pending: isTeacherView ? 0 : pendingCount,
           inProgress: 0,
         });
 
@@ -180,19 +183,20 @@ export default function StudentDashboard() {
 
         // Setear datos de perfil
         setStudentData({
-          name: realStudent
+          name: isTeacherView ? `${user.name} (Simulado)` : (realStudent
             ? `${realStudent.nombreEstudiante} ${realStudent.apellidoEstudiante}`
-            : user.name,
-          avatar: realStudent
+            : user.name),
+          avatar: isTeacherView ? "VS" : (realStudent
             ? `${realStudent.nombreEstudiante[0]}${realStudent.apellidoEstudiante[0]}`
-            : user.name[0],
+            : user.name[0]),
           points: points,
           level: level,
-          progress:
+          progress: isTeacherView ? 0 : (
             myMaterials.length > 0
               ? Math.round((completedCount / myMaterials.length) * 100)
-              : 0,
-          streak: calculatedStreak > 0 ? calculatedStreak : 1, // Si solo tiene entregas en la semana actual o no tiene se inicializa en 1 si tiene entregas, de lo contrario 1 por defecto por visuales
+              : 0
+          ),
+          streak: isTeacherView ? 1 : (calculatedStreak > 0 ? calculatedStreak : 1),
         });
 
         // Actividades recientes reales del estudiante basadas en sus notas
@@ -213,7 +217,7 @@ export default function StudentDashboard() {
           };
         });
 
-        setRecentActivitiesList(realRecentActivities.length > 0 ? realRecentActivities : recentActivities.slice(0, 5));
+        setRecentActivitiesList(isTeacherView ? [] : (realRecentActivities.length > 0 ? realRecentActivities : recentActivities.slice(0, 5)));
       } catch (err) {
         console.error(
           "Error loading student dashboard data, loading fallback mock data:",

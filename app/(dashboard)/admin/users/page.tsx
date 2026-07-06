@@ -104,6 +104,28 @@ export default function AdminUsersPage() {
   const [editTcPassword, setEditTcPassword] = useState('')
   const [submittingEditTc, setSubmittingEditTc] = useState(false)
 
+  // Estados de error para validaciones visuales
+  const [errCreateSt, setErrCreateSt] = useState<any>({})
+  const [errEditSt, setErrEditSt] = useState<any>({})
+  const [errCreateTc, setErrCreateTc] = useState<any>({})
+  const [errEditTc, setErrEditTc] = useState<any>({})
+
+  useEffect(() => {
+    if (!isStudentOpen) setErrCreateSt({})
+  }, [isStudentOpen])
+
+  useEffect(() => {
+    if (!isTeacherOpen) setErrCreateTc({})
+  }, [isTeacherOpen])
+
+  useEffect(() => {
+    if (!isEditStudentOpen) setErrEditSt({})
+  }, [isEditStudentOpen])
+
+  useEffect(() => {
+    if (!isEditTeacherOpen) setErrEditTc({})
+  }, [isEditTeacherOpen])
+
   useEffect(() => {
     const loadUsers = async () => {
       setLoading(true)
@@ -132,20 +154,18 @@ export default function AdminUsersPage() {
   // Handlers para Crear Estudiante
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!stName.trim() || !stPaternal.trim() || !stMaternal.trim()) {
-      toast.error("Por favor completa los nombres y apellidos.")
-      return
-    }
-    if (!validateDni(stDni)) {
-      toast.error("El DNI debe contener exactamente 8 números.")
-      return
-    }
-    if (!validatePhone(stPhone)) {
-      toast.error("El Celular debe contener exactamente 9 números.")
-      return
-    }
-    if (!validateEmail(stEmail)) {
-      toast.error("Ingresa un formato de correo electrónico válido.")
+    setErrCreateSt({})
+    const newErrors: any = {}
+    if (!stName.trim()) newErrors.stName = "Los nombres son obligatorios."
+    if (!stPaternal.trim()) newErrors.stPaternal = "El apellido paterno es obligatorio."
+    if (!stMaternal.trim()) newErrors.stMaternal = "El apellido materno es obligatorio."
+    if (!validateDni(stDni)) newErrors.stDni = "El DNI debe contener exactamente 8 números."
+    if (!validatePhone(stPhone)) newErrors.stPhone = "El Celular debe contener exactamente 9 números."
+    if (!validateEmail(stEmail)) newErrors.stEmail = "Ingresa un formato de correo electrónico válido."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrCreateSt(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
       return
     }
 
@@ -189,6 +209,7 @@ export default function AdminUsersPage() {
 
   // Handlers para Editar Estudiante
   const openEditStudent = (st: any) => {
+    setErrEditSt({})
     setEditStId(st.id)
     setEditStName(st.nombreEstudiante)
     // Extraer apellidos
@@ -205,20 +226,18 @@ export default function AdminUsersPage() {
 
   const handleEditStudent = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editStId || !editStName.trim() || !editStPaternal.trim() || !editStMaternal.trim()) {
-      toast.error("Por favor completa los nombres y apellidos.")
-      return
-    }
-    if (!validateDni(editStDni)) {
-      toast.error("El DNI debe contener exactamente 8 números.")
-      return
-    }
-    if (!validatePhone(editStPhone)) {
-      toast.error("El Celular debe contener exactamente 9 números.")
-      return
-    }
-    if (!validateEmail(editStEmail)) {
-      toast.error("Ingresa un formato de correo electrónico válido.")
+    setErrEditSt({})
+    const newErrors: any = {}
+    if (!editStName.trim()) newErrors.editStName = "Los nombres son obligatorios."
+    if (!editStPaternal.trim()) newErrors.editStPaternal = "El apellido paterno es obligatorio."
+    if (!editStMaternal.trim()) newErrors.editStMaternal = "El apellido materno es obligatorio."
+    if (!validateDni(editStDni)) newErrors.editStDni = "El DNI debe contener exactamente 8 números."
+    if (!validatePhone(editStPhone)) newErrors.editStPhone = "El Celular debe contener exactamente 9 números."
+    if (!validateEmail(editStEmail)) newErrors.editStEmail = "Ingresa un formato de correo electrónico válido."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrEditSt(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
       return
     }
 
@@ -271,24 +290,19 @@ export default function AdminUsersPage() {
   // Handlers para Crear Docente
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!tcName.trim() || !tcPaternal.trim() || !tcMaternal.trim()) {
-      toast.error("Por favor completa los nombres y apellidos.")
-      return
-    }
-    if (!validateDni(tcDni)) {
-      toast.error("El DNI debe contener exactamente 8 números.")
-      return
-    }
-    if (!validatePhone(tcPhone)) {
-      toast.error("El Celular debe contener exactamente 9 números.")
-      return
-    }
-    if (!validateEmail(tcEmail)) {
-      toast.error("Ingresa un formato de correo electrónico válido.")
-      return
-    }
-    if (tcPassword.length < 4) {
-      toast.error("La contraseña debe tener al menos 4 caracteres.")
+    setErrCreateTc({})
+    const newErrors: any = {}
+    if (!tcName.trim()) newErrors.tcName = "Los nombres son obligatorios."
+    if (!tcPaternal.trim()) newErrors.tcPaternal = "El apellido paterno es obligatorio."
+    if (!tcMaternal.trim()) newErrors.tcMaternal = "El apellido materno es obligatorio."
+    if (!validateDni(tcDni)) newErrors.tcDni = "El DNI debe contener exactamente 8 números."
+    if (!validatePhone(tcPhone)) newErrors.tcPhone = "El Celular debe contener exactamente 9 números."
+    if (!validateEmail(tcEmail)) newErrors.tcEmail = "Ingresa un formato de correo electrónico válido."
+    if (tcPassword.length < 4) newErrors.tcPassword = "La contraseña debe tener al menos 4 caracteres."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrCreateTc(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
       return
     }
 
@@ -333,6 +347,7 @@ export default function AdminUsersPage() {
 
   // Handlers para Editar Docente
   const openEditTeacher = (tc: any) => {
+    setErrEditTc({})
     setEditTcId(tc.id)
     setEditTcName(tc.nombreEmpleado)
     const parts = (tc.apellidoEmpleado || "").split(" ")
@@ -349,20 +364,18 @@ export default function AdminUsersPage() {
 
   const handleEditTeacher = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editTcId || !editTcName.trim() || !editTcPaternal.trim() || !editTcMaternal.trim()) {
-      toast.error("Por favor completa los nombres y apellidos.")
-      return
-    }
-    if (!validateDni(editTcDni)) {
-      toast.error("El DNI debe contener exactamente 8 números.")
-      return
-    }
-    if (!validatePhone(editTcPhone)) {
-      toast.error("El Celular debe contener exactamente 9 números.")
-      return
-    }
-    if (!validateEmail(editTcEmail)) {
-      toast.error("Ingresa un formato de correo electrónico válido.")
+    setErrEditTc({})
+    const newErrors: any = {}
+    if (!editTcName.trim()) newErrors.editTcName = "Los nombres son obligatorios."
+    if (!editTcPaternal.trim()) newErrors.editTcPaternal = "El apellido paterno es obligatorio."
+    if (!editTcMaternal.trim()) newErrors.editTcMaternal = "El apellido materno es obligatorio."
+    if (!validateDni(editTcDni)) newErrors.editTcDni = "El DNI debe contener exactamente 8 números."
+    if (!validatePhone(editTcPhone)) newErrors.editTcPhone = "El Celular debe contener exactamente 9 números."
+    if (!validateEmail(editTcEmail)) newErrors.editTcEmail = "Ingresa un formato de correo electrónico válido."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrEditTc(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
       return
     }
 
@@ -752,9 +765,10 @@ export default function AdminUsersPage() {
                   value={stName}
                   onChange={(e) => setStName(e.target.value)}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateSt.stName ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errCreateSt.stName && <p className="text-red-500 text-xs">{errCreateSt.stName}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -766,8 +780,9 @@ export default function AdminUsersPage() {
                   value={stPaternal}
                   onChange={(e) => setStPaternal(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateSt.stPaternal ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errCreateSt.stPaternal && <p className="text-red-500 text-xs">{errCreateSt.stPaternal}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="st-maternal" className="text-slate-600 font-medium">Ap. Materno</Label>
@@ -777,8 +792,9 @@ export default function AdminUsersPage() {
                   value={stMaternal}
                   onChange={(e) => setStMaternal(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateSt.stMaternal ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errCreateSt.stMaternal && <p className="text-red-500 text-xs">{errCreateSt.stMaternal}</p>}
               </div>
             </div>
 
@@ -794,9 +810,10 @@ export default function AdminUsersPage() {
                     value={stDni}
                     onChange={(e) => setStDni(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateSt.stDni ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errCreateSt.stDni && <p className="text-red-500 text-xs">{errCreateSt.stDni}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="st-phone" className="text-slate-600 font-medium">Celular (9 dígitos)</Label>
@@ -809,9 +826,10 @@ export default function AdminUsersPage() {
                     value={stPhone}
                     onChange={(e) => setStPhone(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateSt.stPhone ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errCreateSt.stPhone && <p className="text-red-500 text-xs">{errCreateSt.stPhone}</p>}
               </div>
             </div>
 
@@ -826,9 +844,10 @@ export default function AdminUsersPage() {
                   value={stEmail}
                   onChange={(e) => setStEmail(e.target.value)}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateSt.stEmail ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errCreateSt.stEmail && <p className="text-red-500 text-xs">{errCreateSt.stEmail}</p>}
             </div>
 
             <DialogFooter className="pt-4">
@@ -885,9 +904,10 @@ export default function AdminUsersPage() {
                   value={editStName}
                   onChange={(e) => setEditStName(e.target.value)}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditSt.editStName ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errEditSt.editStName && <p className="text-red-500 text-xs">{errEditSt.editStName}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -899,8 +919,9 @@ export default function AdminUsersPage() {
                   value={editStPaternal}
                   onChange={(e) => setEditStPaternal(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditSt.editStPaternal ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errEditSt.editStPaternal && <p className="text-red-500 text-xs">{errEditSt.editStPaternal}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-st-maternal" className="text-slate-600 font-medium">Ap. Materno</Label>
@@ -910,8 +931,9 @@ export default function AdminUsersPage() {
                   value={editStMaternal}
                   onChange={(e) => setEditStMaternal(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditSt.editStMaternal ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errEditSt.editStMaternal && <p className="text-red-500 text-xs">{errEditSt.editStMaternal}</p>}
               </div>
             </div>
 
@@ -927,9 +949,10 @@ export default function AdminUsersPage() {
                     value={editStDni}
                     onChange={(e) => setEditStDni(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditSt.editStDni ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errEditSt.editStDni && <p className="text-red-500 text-xs">{errEditSt.editStDni}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-st-phone" className="text-slate-600 font-medium">Celular (9 dígitos)</Label>
@@ -942,9 +965,10 @@ export default function AdminUsersPage() {
                     value={editStPhone}
                     onChange={(e) => setEditStPhone(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditSt.editStPhone ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errEditSt.editStPhone && <p className="text-red-500 text-xs">{errEditSt.editStPhone}</p>}
               </div>
             </div>
 
@@ -959,9 +983,10 @@ export default function AdminUsersPage() {
                   value={editStEmail}
                   onChange={(e) => setEditStEmail(e.target.value)}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditSt.editStEmail ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errEditSt.editStEmail && <p className="text-red-500 text-xs">{errEditSt.editStEmail}</p>}
             </div>
 
             <div className="space-y-2">
@@ -1039,9 +1064,10 @@ export default function AdminUsersPage() {
                   value={tcName}
                   onChange={(e) => setTcName(e.target.value)}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateTc.tcName ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errCreateTc.tcName && <p className="text-red-500 text-xs">{errCreateTc.tcName}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1053,8 +1079,9 @@ export default function AdminUsersPage() {
                   value={tcPaternal}
                   onChange={(e) => setTcPaternal(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateTc.tcPaternal ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errCreateTc.tcPaternal && <p className="text-red-500 text-xs">{errCreateTc.tcPaternal}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tc-maternal" className="text-slate-600 font-medium">Ap. Materno</Label>
@@ -1064,8 +1091,9 @@ export default function AdminUsersPage() {
                   value={tcMaternal}
                   onChange={(e) => setTcMaternal(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateTc.tcMaternal ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errCreateTc.tcMaternal && <p className="text-red-500 text-xs">{errCreateTc.tcMaternal}</p>}
               </div>
             </div>
 
@@ -1081,9 +1109,10 @@ export default function AdminUsersPage() {
                     value={tcDni}
                     onChange={(e) => setTcDni(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateTc.tcDni ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errCreateTc.tcDni && <p className="text-red-500 text-xs">{errCreateTc.tcDni}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tc-phone" className="text-slate-600 font-medium">Celular (9 dígitos)</Label>
@@ -1096,9 +1125,10 @@ export default function AdminUsersPage() {
                     value={tcPhone}
                     onChange={(e) => setTcPhone(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateTc.tcPhone ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errCreateTc.tcPhone && <p className="text-red-500 text-xs">{errCreateTc.tcPhone}</p>}
               </div>
             </div>
 
@@ -1113,9 +1143,10 @@ export default function AdminUsersPage() {
                   value={tcEmail}
                   onChange={(e) => setTcEmail(e.target.value)}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateTc.tcEmail ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errCreateTc.tcEmail && <p className="text-red-500 text-xs">{errCreateTc.tcEmail}</p>}
             </div>
 
             <div className="space-y-2">
@@ -1127,8 +1158,9 @@ export default function AdminUsersPage() {
                 value={tcPassword}
                 onChange={(e) => setTcPassword(e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateTc.tcPassword ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
               />
+              {errCreateTc.tcPassword && <p className="text-red-500 text-xs">{errCreateTc.tcPassword}</p>}
             </div>
 
             <DialogFooter className="pt-4">
@@ -1185,9 +1217,10 @@ export default function AdminUsersPage() {
                   value={editTcName}
                   onChange={(e) => setEditTcName(e.target.value)}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditTc.editTcName ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errEditTc.editTcName && <p className="text-red-500 text-xs">{errEditTc.editTcName}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1199,8 +1232,9 @@ export default function AdminUsersPage() {
                   value={editTcPaternal}
                   onChange={(e) => setEditTcPaternal(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditTc.editTcPaternal ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errEditTc.editTcPaternal && <p className="text-red-500 text-xs">{errEditTc.editTcPaternal}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-tc-maternal" className="text-slate-600 font-medium">Ap. Materno</Label>
@@ -1210,8 +1244,9 @@ export default function AdminUsersPage() {
                   value={editTcMaternal}
                   onChange={(e) => setEditTcMaternal(e.target.value)}
                   required
-                  className="rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditTc.editTcMaternal ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
+                {errEditTc.editTcMaternal && <p className="text-red-500 text-xs">{errEditTc.editTcMaternal}</p>}
               </div>
             </div>
 
@@ -1227,9 +1262,10 @@ export default function AdminUsersPage() {
                     value={editTcDni}
                     onChange={(e) => setEditTcDni(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditTc.editTcDni ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errEditTc.editTcDni && <p className="text-red-500 text-xs">{errEditTc.editTcDni}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-tc-phone" className="text-slate-600 font-medium">Celular (9 dígitos)</Label>
@@ -1242,9 +1278,10 @@ export default function AdminUsersPage() {
                     value={editTcPhone}
                     onChange={(e) => setEditTcPhone(e.target.value.replace(/\D/g, ''))}
                     required
-                    className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                    className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditTc.editTcPhone ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                   />
                 </div>
+                {errEditTc.editTcPhone && <p className="text-red-500 text-xs">{errEditTc.editTcPhone}</p>}
               </div>
             </div>
 
@@ -1259,9 +1296,10 @@ export default function AdminUsersPage() {
                   value={editTcEmail}
                   onChange={(e) => setEditTcEmail(e.target.value)}
                   required
-                  className="pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200"
+                  className={`pl-10 rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errEditTc.editTcEmail ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
                 />
               </div>
+              {errEditTc.editTcEmail && <p className="text-red-500 text-xs">{errEditTc.editTcEmail}</p>}
             </div>
 
             <div className="space-y-2">
