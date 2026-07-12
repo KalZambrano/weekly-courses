@@ -115,7 +115,44 @@ export default function TeacherStudentsPage() {
           getAllCourses()
         ]);
 
-        const mapped = allSts.map((s: any) => {
+        // Obtener el ID del docente logueado desde localStorage
+        const userStr = localStorage.getItem('user');
+        let teacherId: number | null = null;
+        if (userStr) {
+          try {
+            const parsed = JSON.parse(userStr);
+            if (parsed && parsed.id) {
+              teacherId = parseInt(parsed.id);
+            }
+          } catch (e) {
+            console.error("Error parsing user from localStorage:", e);
+          }
+        }
+
+        // Obtener asignaciones vinculadas a este docente
+        const docenteAssignments = allAssignments.filter((a: any) => {
+          const assTeacherId = a.asistenteIdAsignacionCuAs || a.asistenteIdAsignacion || (a.asistente?.id) || (a.asistente?.idEmpleado);
+          return assTeacherId === teacherId;
+        });
+
+        // Obtener IDs de asignaciones del docente
+        const docenteAssignmentIds = docenteAssignments.map((a: any) => a.id || a.idAsignacion);
+
+        // Obtener inscripciones para estas asignaciones
+        const docenteEnrollments = allEnrollments.filter((e: any) => 
+          docenteAssignmentIds.includes(e.asignacionIdInscripcion)
+        );
+
+        // Obtener IDs de estudiantes inscritos
+        const docenteStudentIds = docenteEnrollments.map((e: any) => e.estudianteIdInscripcion);
+
+        // Filtrar estudiantes de la base de datos
+        const filteredSts = allSts.filter((s: any) => {
+          const studentId = s?.id || s?.idEstudiante;
+          return studentId && docenteStudentIds.includes(studentId);
+        });
+
+        const mapped = filteredSts.map((s: any) => {
           const studentId = s?.id || s?.idEstudiante;
           const studentEnrollments = studentId ? allEnrollments.filter((e: any) => e.estudianteIdInscripcion === studentId) : [];
           const totalPoints = studentEnrollments.reduce((sum: number, e: any) => sum + (e.totalPuntosInscripcion || 0), 0);

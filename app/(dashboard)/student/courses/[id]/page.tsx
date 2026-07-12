@@ -52,7 +52,8 @@ import {
   getAllMaterials,
   getAllStudents,
   getAllEvaluations,
-  getAllGrades
+  getAllGrades,
+  getAllAssistants
 } from "@/services/services";
 
 import type {
@@ -120,6 +121,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { id } = use(params);
   const { user } = useAuth();
   const { toast } = useToast();
+  const isTeacherView = user?.role === 'teacher';
 
   const [course, setCourse] = useState<any>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -142,7 +144,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
     const loadCourseData = async () => {
       try {
-        const studentId = parseInt(user.id || "0");
+        const isTeacherView = user.role === 'teacher';
+        const studentId = isTeacherView ? -999 : parseInt(user.id || "0");
         const courseId = parseInt(id);
 
         const realCourse = await fetchApi(
@@ -169,13 +172,15 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           allEvaluations,
           myGrades,
           allStudents,
+          allAssistants,
         ] = await Promise.all([
-          getAllAssignments(),
-          getAllMaterials(),
-          getAllEnrollments(),
-          getAllEvaluations(),
-          getAllGrades(),
-          getAllStudents(),
+          getAllAssignments().catch(() => []),
+          getAllMaterials().catch(() => []),
+          getAllEnrollments().catch(() => []),
+          getAllEvaluations().catch(() => []),
+          getAllGrades().catch(() => []),
+          getAllStudents().catch(() => []),
+          getAllAssistants().catch(() => []),
         ]);
 
         // Encontrar asignación para este curso
@@ -197,10 +202,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           );
           const evaluationId = evaluation ? evaluation.id : null;
 
-          // Buscar nota si ya fue calificado
-          const grade = evaluationId
+          // Buscar nota si ya fue calificado y no es vista simulación
+          const grade = (evaluationId && !isTeacherView)
             ? myGrades.find(
-                (g: any) => g.evaluacionCuNota === evaluationId,
+                (g: any) => g.evaluacionCuNota === evaluationId && g.estudianteNota === studentId,
               )
             : null;
           const status = grade ? "completed" : "pending";
@@ -291,25 +296,37 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         setCourseRanking(sortedRanking);
 
         // Buscar desempeño del estudiante actual
-        const curUserRank = sortedRanking.find((s) => s.id === user.id);
-        setCurrentUserRanking(curUserRank || sortedRanking[0] || null);
+        const curUserRank = isTeacherView ? null : sortedRanking.find((s) => s.id === user.id);
+        setCurrentUserRanking(curUserRank || null);
 
-        // Progreso del curso basado en actividades completadas
+        // Progreso del curso basado en actividades completadas (o 40% si es simulación de docente)
         const totalAct = mappedActivities.length;
         const compAct = mappedActivities.filter(
           (a) => a.status === "completed",
         ).length;
-        const progressPercent =
-          totalAct > 0 ? Math.round((compAct / totalAct) * 100) : 0;
+        const progressPercent = totalAct === 0 ? 0 : (
+          isTeacherView ? 40 : Math.round((compAct / totalAct) * 100)
+        );
+
+        let teacherName = "Sin docente asignado";
+        if (isTeacherView && user?.name) {
+          teacherName = user.name;
+        } else if (assignment) {
+          const teacherId = assignment.asistenteIdAsignacionCuAs || assignment.asistenteIdAsignacion || (assignment.asistente?.id) || (assignment.asistente?.idEmpleado);
+          const teacherObj = allAssistants.find((as: any) => as.id === teacherId);
+          if (teacherObj) {
+            teacherName = `${teacherObj.nombreEmpleado} ${teacherObj.apellidoEmpleado}`;
+          } else if (assignment.asistente) {
+            teacherName = `${assignment.asistente.nombreEmpleado} ${assignment.asistente.apellidoEmpleado}`;
+          }
+        }
 
         setCourse({
           id: (realCourse.id ?? realCourse.idCurso ?? "").toString(),
           name: realCourse.nombreCurso,
           description: realCourse.descripcionCurso,
           icon: "📚", // icono fallback
-          teacher: assignment
-            ? `Asistente de Aprendizaje (Zaiko)`
-            : "Sin asignar",
+          teacher: teacherName,
           section: "101",
           progress: progressPercent,
           totalActivities: totalAct,
@@ -357,7 +374,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const filteredCompanions = courseStudents.filter(
     (s) =>
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      s.id !== user?.id,
+      (isTeacherView ? true : s.id !== user?.id),
   );
 
   // FUNCIÓN PARA ABRIR EL MODAL DE INVITACIÓN
@@ -582,11 +599,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
         <TabsContent value="ranking">
           <div className="grid gap-6 md:grid-cols-3 items-start">
-            <div className="md:col-span-2">
+            <div className={isTeacherView ? "md:col-span-3" : "md:col-span-2"}>
               {courseRanking.length > 0 ? (
                 <MiniRanking
                   ranking={courseRanking}
-                  currentUserId={user?.id || ""}
+                  currentUserId={isTeacherView ? "" : (user?.id || "")}
                   limit={courseRanking.length}
                   title="Ranking del Curso"
                   showFooter={false}
@@ -599,45 +616,47 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                 </div>
               )}
             </div>
-            <div className="md:col-span-1">
-              <Card className="sticky top-8">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">Tu Desempeño</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex flex-col items-center justify-center text-center space-y-2">
-                    <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
-                      #{currentUserRanking?.position || "-"}
+            {!isTeacherView && (
+              <div className="md:col-span-1">
+                <Card className="sticky top-8">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg">Tu Desempeño</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex flex-col items-center justify-center text-center space-y-2">
+                      <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                        #{currentUserRanking?.position || "-"}
+                      </div>
+                      <div>
+                        <p className="font-semibold">Posición en el curso</p>
+                        <p className="text-sm text-muted-foreground">
+                          De {courseRanking.length} estudiantes
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold">Posición en el curso</p>
-                      <p className="text-sm text-muted-foreground">
-                        De {courseRanking.length} estudiantes
-                      </p>
+                    <div className="space-y-2 border-t pt-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Tus puntos:</span>
+                        <span className="font-bold text-primary">
+                          {(currentUserRanking?.points || 0).toLocaleString(
+                            "en-US",
+                          )}{" "}
+                          pts
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Nivel actual:
+                        </span>
+                        <span className="font-bold">
+                          {currentUserRanking?.level || "Bronce"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2 border-t pt-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Tus puntos:</span>
-                      <span className="font-bold text-primary">
-                        {(currentUserRanking?.points || 0).toLocaleString(
-                          "en-US",
-                        )}{" "}
-                        pts
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Nivel actual:
-                      </span>
-                      <span className="font-bold">
-                        {currentUserRanking?.level || "Bronce"}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </TabsContent>
 

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { CourseCard } from '@/components/custom/course-card'
 import { PointsSystemInfo } from '@/components/custom/points-system-info'
 import { Search, BookOpen, Filter, Loader2 } from 'lucide-react'
-import { getAllEnrollments } from '@/services/services'
+import { getAllEnrollments, getAllCourses, getAllAssignments } from '@/services/services'
 import {
   Select,
   SelectContent,
@@ -34,6 +34,45 @@ export default function CoursesPage() {
         if (!user.id) {
           throw new Error("No user ID found, using fallback courses.");
         }
+
+        if (user.role === 'teacher') {
+          const teacherId = parseInt(user.id)
+          const [allAssignments, allCourses] = await Promise.all([
+            getAllAssignments(),
+            getAllCourses()
+          ])
+
+          const myAssignments = allAssignments.filter((a: any) => {
+            const assTeacherId = a.asistenteIdAsignacionCuAs || a.asistenteIdAsignacion || (a.asistente?.id) || (a.asistente?.idEmpleado);
+            return assTeacherId === teacherId;
+          });
+
+          const mappedCourses = myAssignments.map((assignment: any) => {
+            const course = allCourses.find((c: any) => 
+              (c.id || c.idCurso) === (assignment.cursoIdAsignacionCuAs || assignment.cursoIdAsignacion)
+            );
+            if (!course) return null;
+
+            return {
+              id: (course.id ?? course.idCurso ?? "").toString(),
+              enrollmentId: `sim-${assignment.id}`,
+              name: course.nombreCurso,
+              description: course.descripcionCurso,
+              progress: 40,
+              activitiesCount: 12,
+              completedCount: 5,
+              color: "indigo"
+            };
+          }).filter((c: any) => c !== null);
+
+          const uniqueCourses = mappedCourses.filter((course: any, index: number, self: any[]) =>
+            self.findIndex((c) => c.id === course.id) === index
+          );
+
+          setEnrolledCourses(uniqueCourses.length > 0 ? uniqueCourses : mockCourses);
+          return;
+        }
+
         const studentId = parseInt(user.id)
         
         // Fetch enrollments for this student

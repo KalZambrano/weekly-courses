@@ -1,6 +1,7 @@
 //WEEKLY-COURSES/lib/api.ts
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sistema-educativo-fastapi.onrender.com';
+  //const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
   // Obtenemos el token guardado en el login
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;

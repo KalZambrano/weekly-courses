@@ -65,6 +65,18 @@ export default function AdminAssignmentsPage() {
   const [selectedAssignment, setSelectedAssignment] = useState('')
   const [submittingEnroll, setSubmittingEnroll] = useState(false)
 
+  // Estados de error para validaciones visuales
+  const [errCreateAssignment, setErrCreateAssignment] = useState<any>({})
+  const [errCreateEnrollment, setErrCreateEnrollment] = useState<any>({})
+
+  useEffect(() => {
+    if (!isAssignOpen) setErrCreateAssignment({})
+  }, [isAssignOpen])
+
+  useEffect(() => {
+    if (!isEnrollOpen) setErrCreateEnrollment({})
+  }, [isEnrollOpen])
+
   useEffect(() => {
     const loadAllData = async () => {
       setLoading(true)
@@ -94,8 +106,14 @@ export default function AdminAssignmentsPage() {
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedCourse || !selectedTeacher) {
-      toast.error("Por favor selecciona un curso y un docente.")
+    setErrCreateAssignment({})
+    const newErrors: any = {}
+    if (!selectedCourse) newErrors.selectedCourse = "Por favor selecciona un curso."
+    if (!selectedTeacher) newErrors.selectedTeacher = "Por favor selecciona un docente."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrCreateAssignment(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
       return
     }
 
@@ -130,8 +148,14 @@ export default function AdminAssignmentsPage() {
 
   const handleCreateEnrollment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedStudent || !selectedAssignment) {
-      toast.error("Por favor selecciona un estudiante y una asignación de clase.")
+    setErrCreateEnrollment({})
+    const newErrors: any = {}
+    if (!selectedStudent) newErrors.selectedStudent = "Por favor selecciona un estudiante."
+    if (!selectedAssignment) newErrors.selectedAssignment = "Por favor selecciona una asignación de clase."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrCreateEnrollment(newErrors)
+      toast.error("Por favor completa los campos correctamente.")
       return
     }
 
@@ -326,7 +350,7 @@ export default function AdminAssignmentsPage() {
             <div className="space-y-2">
               <Label className="text-slate-650 font-medium">Curso Académico</Label>
               <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                <SelectTrigger className="rounded-xl border-slate-200 focus-visible:ring-blue-200">
+                <SelectTrigger className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateAssignment.selectedCourse ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Selecciona un curso..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -337,12 +361,13 @@ export default function AdminAssignmentsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errCreateAssignment.selectedCourse && <p className="text-red-500 text-xs">{errCreateAssignment.selectedCourse}</p>}
             </div>
 
             <div className="space-y-2">
               <Label className="text-slate-650 font-medium">Docente Responsable</Label>
               <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
-                <SelectTrigger className="rounded-xl border-slate-200 focus-visible:ring-blue-200">
+                <SelectTrigger className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateAssignment.selectedTeacher ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Selecciona un docente..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -353,6 +378,7 @@ export default function AdminAssignmentsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errCreateAssignment.selectedTeacher && <p className="text-red-500 text-xs">{errCreateAssignment.selectedTeacher}</p>}
             </div>
 
             <DialogFooter className="pt-4">
@@ -400,7 +426,7 @@ export default function AdminAssignmentsPage() {
             <div className="space-y-2">
               <Label className="text-slate-650 font-medium">Estudiante</Label>
               <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                <SelectTrigger className="rounded-xl border-slate-200 focus-visible:ring-blue-200">
+                <SelectTrigger className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateEnrollment.selectedStudent ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Selecciona un estudiante..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -411,12 +437,13 @@ export default function AdminAssignmentsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errCreateEnrollment.selectedStudent && <p className="text-red-500 text-xs">{errCreateEnrollment.selectedStudent}</p>}
             </div>
 
             <div className="space-y-2">
               <Label className="text-slate-650 font-medium">Clase Asignada (Curso - Docente)</Label>
               <Select value={selectedAssignment} onValueChange={setSelectedAssignment}>
-                <SelectTrigger className="rounded-xl border-slate-200 focus-visible:ring-blue-200">
+                <SelectTrigger className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateEnrollment.selectedAssignment ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Selecciona una asignación..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -427,6 +454,7 @@ export default function AdminAssignmentsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {errCreateEnrollment.selectedAssignment && <p className="text-red-500 text-xs">{errCreateEnrollment.selectedAssignment}</p>}
             </div>
 
             <DialogFooter className="pt-4">
