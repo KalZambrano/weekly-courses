@@ -12,16 +12,18 @@ import { currentStudent } from '@/data/mock-data'
 
 interface QuizViewerProps {
   activity: Activity
-  onComplete?: (attemptData: QuizAttempt) => void
+  onComplete?: (attemptData: QuizAttempt) => Promise<void> | void
+  onClose?: () => void
 }
 
-export function QuizViewer({ activity, onComplete }: QuizViewerProps) {
+export function QuizViewer({ activity, onComplete, onClose }: QuizViewerProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([])
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [score, setScore] = useState(0)
   const [attemptCount, setAttemptCount] = useState(activity.attempts?.length || 0)
-  const [quizCompleted, setQuizCompleted] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   
   const quiz = activity.quiz
   
@@ -54,26 +56,32 @@ export function QuizViewer({ activity, onComplete }: QuizViewerProps) {
     return (correctCount / questions.length) * 20 // Máximo 20 puntos
   }
 
-  const handleSubmitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     const finalScore = calculateScore()
-    setScore(finalScore)
-    setIsSubmitted(true)
-    
     const isApproved = finalScore >= quiz.passingScore
-    const pointsEarned = isApproved ? activity.points * dayMultiplier : 0
-    
-    // Crear intento
+    const pointsEarned = isApproved && !activity.isApproved
+      ? activity.points * dayMultiplier
+      : 0
     const newAttempt: QuizAttempt = {
       attemptNumber: attemptCount + 1,
       score: finalScore,
       answers: selectedAnswers,
       completedAt: new Date().toISOString(),
-      pointsEarned: pointsEarned
+      pointsEarned,
     }
 
-    if (isApproved && !activity.isApproved) {
-      setQuizCompleted(true)
-      onComplete?.(newAttempt)
+    setScore(finalScore)
+    setAttemptCount(newAttempt.attemptNumber)
+    setIsSubmitted(true)
+    setIsSaving(true)
+    setSaveError(null)
+
+    try {
+      await onComplete?.(newAttempt)
+    } catch {
+      setSaveError("No se pudo guardar este intento. Inténtalo nuevamente antes de salir.")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -94,8 +102,7 @@ export function QuizViewer({ activity, onComplete }: QuizViewerProps) {
     setSelectedAnswers([])
     setIsSubmitted(false)
     setScore(0)
-    setAttemptCount(attemptCount + 1)
-    setQuizCompleted(false)
+    setSaveError(null)
   }
 
   const progressPercent = ((currentQuestion + 1) / questions.length) * 100
@@ -124,8 +131,8 @@ export function QuizViewer({ activity, onComplete }: QuizViewerProps) {
             </h2>
             <p className="text-muted-foreground mt-2">
               {isApproved 
-                ? `¡Excelente! Obtuviste ${score.toFixed(1)} de ${questions.length * 5} puntos` 
-                : `Obtuviste ${score.toFixed(1)} de ${questions.length * 5} puntos. Necesitas ${quiz.passingScore} para aprobar`}
+                ? `¡Excelente! Obtuviste ${score.toFixed(1)} de 20 puntos` 
+                : `Obtuviste ${score.toFixed(1)} de 20 puntos. Necesitas ${quiz.passingScore} para aprobar`}
             </p>
           </div>
         </div>
@@ -137,13 +144,24 @@ export function QuizViewer({ activity, onComplete }: QuizViewerProps) {
                 <Zap className="size-5 text-success" />
               </div>
               <div>
-                <h4 className="font-bold text-success">Puntos Ganados</h4>
+                <h4 className="font-bold text-success">
+                  {activity.isApproved ? "Quiz aprobado anteriormente" : "Puntos ganados"}
+                </h4>
                 <p className="text-sm text-success/80 mt-1">
-                  Has ganado <strong>{(activity.points * dayMultiplier).toFixed(0)} puntos</strong> con multiplicador <strong>{multiplierInfo.label}</strong>
+                  {activity.isApproved
+                    ? "Tu intento fue guardado, pero los puntos de este quiz se entregan una sola vez."
+                    : <>Has ganado <strong>{(activity.points * dayMultiplier).toFixed(0)} puntos</strong> con multiplicador <strong>{multiplierInfo.label}</strong>.</>}
                 </p>
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {isSaving && (
+          <Alert><AlertDescription>Guardando tu nota y actualizando tus puntos...</AlertDescription></Alert>
+        )}
+        {saveError && (
+          <Alert variant="destructive"><AlertDescription>{saveError}</AlertDescription></Alert>
         )}
 
         {!isApproved && failedTopics.length > 0 && (
@@ -182,8 +200,8 @@ export function QuizViewer({ activity, onComplete }: QuizViewerProps) {
               Máximo de intentos alcanzado
             </Button>
           )}
-          <Button onClick={() => window.history.back()} variant="outline" size="lg">
-            Volver
+          <Button onClick={onClose} disabled={isSaving} variant="outline" size="lg">
+            Volver al temario
           </Button>
         </div>
 
@@ -197,7 +215,7 @@ export function QuizViewer({ activity, onComplete }: QuizViewerProps) {
               <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <span className="text-sm">Intento {attempt.attemptNumber}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold">{attempt.score.toFixed(1)}/{questions.length * 5}</span>
+                  <span className="text-sm font-semibold">{attempt.score.toFixed(1)}/20</span>
                   {attempt.score >= quiz.passingScore && (
                     <span className="text-xs bg-success/20 text-success px-2 py-1 rounded">Aprobado</span>
                   )}

@@ -17,6 +17,7 @@ export const config = {
             getAll: '/Estudiantes/listEstudiantes',
             getOne: (id: string) => `/Estudiantes/findEstudianteById/${id}`,
             create: '/Estudiantes/addEstudiante',
+            update: (id: string | number) => `/Estudiantes/updateEstudiante/${id}`,
             delete: (id: string) => `/Estudiantes/deleteEstudiante?id=${id}`
         },
         asignacionCuAs: {
@@ -36,6 +37,7 @@ export const config = {
             getAll: '/inscripcionEsCu/listInscripcionEsCu',
             // getOne: (id: string) => `/inscripcionEsCu/findInscripcionEsCuById/${id}`,
             create: '/inscripcionEsCu/addInscripcionEsCu',
+            update: (id: string | number) => `/inscripcionEsCu/updateInscripcionEsCu/${id}`,
             // delete: '/inscripcionEsCu/deleteInscripcionEsCu'
         },
         evaluacionCurso: {

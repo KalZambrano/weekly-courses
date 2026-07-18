@@ -132,6 +132,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const [activeActivity, setActiveActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+  const [studentRecord, setStudentRecord] = useState<any>(null);
+  const [courseEnrollment, setCourseEnrollment] = useState<any>(null);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
 
   // ESTADOS PARA LA PESTAÑA DE COMPAÑEROS Y EL MODAL
   const [searchQuery, setSearchQuery] = useState("");
@@ -188,6 +191,33 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           (a: any) => (a.cursoIdAsignacionCuAs ?? a.cursoIdAsignacion) === courseId,
         );
         const assignmentId = assignment ? (assignment.id ?? assignment.idAsignacion) : null;
+        const courseEnrollments = allEnrollments.filter(
+          (e: any) => e.asignacionIdInscripcion === assignmentId,
+        );
+        const activeEnrollment = isTeacherView
+          ? null
+          : courseEnrollments.find(
+              (e: any) => e.estudianteIdInscripcion === studentId,
+            ) ?? null;
+        const activeStudent = isTeacherView
+          ? null
+          : allStudents.find(
+              (s: any) => (s.id ?? s.idEstudiante) === studentId,
+            ) ?? null;
+        const completedMaterialIds = (() => {
+          const value = activeEnrollment?.materialesCompletadosInscripcion;
+          if (Array.isArray(value)) return value.map(String);
+          if (typeof value !== "string" || !value) return [];
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed.map(String) : [];
+          } catch {
+            return value.split(",").filter(Boolean);
+          }
+        })();
+
+        setCourseEnrollment(activeEnrollment);
+        setStudentRecord(activeStudent);
 
         // Filtrar materiales de esta asignación
         const courseMaterials = allMaterials.filter(
@@ -202,13 +232,24 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           );
           const evaluationId = evaluation ? evaluation.id : null;
 
-          // Buscar nota si ya fue calificado y no es vista simulación
-          const grade = (evaluationId && !isTeacherView)
-            ? myGrades.find(
-                (g: any) => g.evaluacionCuNota === evaluationId && g.estudianteNota === studentId,
+          // Recuperar todos los intentos para conservar el historial completo.
+          const evaluationGrades = (evaluationId && !isTeacherView)
+            ? myGrades.filter(
+                (g: any) =>
+                  (g.evaluacionCuNota?.id ?? g.evaluacionCuNota) === evaluationId &&
+                  (g.estudianteNota?.id ?? g.estudianteNota) === studentId,
               )
-            : null;
-          const status = grade ? "completed" : "pending";
+            : [];
+          const approvedGrade = evaluationGrades.find(
+            (g: any) => Number(g.calificacionNota) >= 12,
+          );
+          const bestGrade = evaluationGrades.reduce(
+            (best: any, grade: any) =>
+              !best || Number(grade.calificacionNota) > Number(best.calificacionNota)
+                ? grade
+                : best,
+            null,
+          );
 
           const isQuiz =
             evaluation !== undefined ||
@@ -230,6 +271,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             }
           }
 
+          const status = isQuiz
+            ? (approvedGrade ? "completed" : "pending")
+            : (completedMaterialIds.includes(String(m.id)) ? "completed" : "pending");
+
           return {
             id: m.id.toString(),
             name: m.tituloMaterial,
@@ -249,15 +294,19 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   passingScore: 12,
                 }
               : undefined,
-            bestAttemptScore: grade ? Math.round(grade.calificacionNota) : undefined,
-            isApproved: grade ? grade.calificacionNota >= 12 : undefined,
+            attempts: evaluationGrades.map((grade: any, index: number) => ({
+              attemptNumber: index + 1,
+              score: Number(grade.calificacionNota),
+              answers: [],
+              completedAt: grade.fechaNota ?? grade.createdAt ?? "",
+              pointsEarned: Number(grade.calificacionNota) >= 12 && index === 0
+                ? Math.round(evaluation?.puntosEvaluacion ?? 0)
+                : 0,
+            })),
+            bestAttemptScore: bestGrade ? Math.round(bestGrade.calificacionNota) : undefined,
+            isApproved: Boolean(approvedGrade),
           };
         });
-
-        // Filtrar inscripciones para este curso
-        const courseEnrollments = allEnrollments.filter(
-          (e: any) => e.asignacionIdInscripcion === assignmentId,
-        );
 
         // Mapear estudiantes del curso
         const mappedStudents: Student[] = courseEnrollments
@@ -268,7 +317,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             );
             if (!s) return null;
 
-            const sPoints = s.puntos ?? s.points ?? 0;
+            const sPoints = Number(enrollment.totalPuntosInscripcion ?? 0);
             let sLevel: "Bronce" | "Plata" | "Oro" = "Bronce";
             if (sPoints >= 3000) sLevel = "Oro";
             else if (sPoints >= 2000) sLevel = "Plata";
@@ -363,10 +412,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     (a) => a.status === "completed",
   );
   const totalPoints = activities.reduce((sum, a) => sum + a.points, 0);
-  const earnedPoints = completedActivities.reduce(
-    (sum, a) => sum + (a.bestAttemptScore || a.points),
-    0,
-  );
+  const earnedPoints = Number(courseEnrollment?.totalPuntosInscripcion ?? 0);
   const totalDuration = activities.length * 15; // fallback estimación
 
   const currentWeek = getCurrentWeek();
@@ -408,47 +454,137 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     }
   };
 
-  // FUNCIÓN AL COMPLETAR ACTIVIDAD O QUIZ (Integrado con backend /nota/addNota)
+  const getCompletedMaterialIds = (enrollment: any): string[] => {
+    const value = enrollment?.materialesCompletadosInscripcion;
+    if (Array.isArray(value)) return value.map(String);
+    if (typeof value !== "string" || !value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return value.split(",").filter(Boolean);
+    }
+  };
+
+  const persistPoints = async (points: number, completedMaterialId?: string) => {
+    if (points <= 0 || !user?.id || !studentRecord || !courseEnrollment) return;
+
+    const enrollmentId = courseEnrollment.id ?? courseEnrollment.idInscripcion;
+    if (!enrollmentId) throw new Error("No se encontró la inscripción del curso.");
+
+    const completedIds = getCompletedMaterialIds(courseEnrollment);
+    const nextCompletedIds = completedMaterialId && !completedIds.includes(completedMaterialId)
+      ? [...completedIds, completedMaterialId]
+      : completedIds;
+    const nextCoursePoints = Number(courseEnrollment.totalPuntosInscripcion ?? 0) + points;
+    const nextGlobalPoints = Number(
+      studentRecord.puntosEstudiante ?? studentRecord.puntos ?? studentRecord.points ?? 0,
+    ) + points;
+
+    await fetchApi(config.endpoints.inscripcionEsCu.update(enrollmentId), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...courseEnrollment,
+        totalPuntosInscripcion: nextCoursePoints,
+        materialesCompletadosInscripcion: JSON.stringify(nextCompletedIds),
+      }),
+    });
+
+    await fetchApi(config.endpoints.estudiantes.update(user.id), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...studentRecord,
+        puntosEstudiante: nextGlobalPoints,
+      }),
+    });
+
+    setCourseEnrollment((current: any) => ({
+      ...current,
+      totalPuntosInscripcion: nextCoursePoints,
+      materialesCompletadosInscripcion: JSON.stringify(nextCompletedIds),
+    }));
+    setStudentRecord((current: any) => ({ ...current, puntosEstudiante: nextGlobalPoints }));
+  };
+
+  // Guarda todos los intentos y premia únicamente la primera aprobación/finalización.
   const handleActivityComplete = async (
     activity: Activity,
     attemptData?: QuizAttempt,
   ) => {
-    if (activity.type === "quiz" && attemptData) {
-      const evaluationId = activity.backendEvaluationId;
-      if (evaluationId) {
-        try {
-          // Registrar la nota en el backend real
-          await fetchApi(config.endpoints.notaEvaluacion.create, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              evaluacionCuNota: evaluationId,
-              estudianteNota: parseInt(user?.id || "1"),
-              calificacionNota: attemptData.score,
-              observacionNota: `Nota obtenida en el intento ${attemptData.attemptNumber} desde la plataforma Next.js.`,
-            }),
-          });
+    if (isSavingProgress) return;
+    setIsSavingProgress(true);
 
-          toast({
-            title: "¡Quiz calificado en el Backend!",
-            description: `Tu nota de ${attemptData.score} pts ha sido guardada con éxito.`,
-            className: "bg-success text-success-foreground border-none",
-          });
-        } catch (err) {
-          console.error("Error guardando nota en el backend:", err);
-          toast({
-            title: "Error de Guardado",
-            description:
-              "La nota se calculó localmente pero no se pudo sincronizar al backend.",
-            variant: "destructive",
-          });
+    try {
+      if (activity.type === "quiz") {
+        if (!attemptData || !activity.backendEvaluationId) {
+          throw new Error("El quiz no tiene una evaluación asociada.");
         }
-      }
-    }
 
-    // Forzar recarga de datos
-    setTick((t) => t + 1);
-    setActiveActivity(null);
+        await fetchApi(config.endpoints.notaEvaluacion.create, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            evaluacionCuNota: activity.backendEvaluationId,
+            estudianteNota: Number(user?.id),
+            calificacionNota: attemptData.score,
+            observacionNota: JSON.stringify({
+              intento: attemptData.attemptNumber,
+              respuestas: attemptData.answers,
+              fecha: attemptData.completedAt,
+              aprobado: attemptData.score >= (activity.quiz?.passingScore ?? 12),
+            }),
+          }),
+        });
+
+        if (attemptData.pointsEarned > 0 && !activity.isApproved) {
+          await persistPoints(Math.round(attemptData.pointsEarned));
+        }
+
+        toast({
+          title: "Intento guardado",
+          description: attemptData.pointsEarned > 0
+            ? `Nota ${attemptData.score.toFixed(1)}. Se sumaron ${Math.round(attemptData.pointsEarned)} puntos.`
+            : `Tu nota de ${attemptData.score.toFixed(1)} fue registrada.`,
+          className: "bg-success text-success-foreground border-none",
+        });
+      } else {
+        const completedIds = getCompletedMaterialIds(courseEnrollment);
+        if (completedIds.includes(activity.id) || activity.status === "completed") {
+          toast({
+            title: "Material ya completado",
+            description: "Este material ya otorgó sus puntos anteriormente.",
+          });
+          return;
+        }
+
+        await persistPoints(activity.points, activity.id);
+        setActivities((current) => current.map((item) =>
+          item.id === activity.id
+            ? { ...item, status: "completed", completedAt: new Date().toISOString() }
+            : item,
+        ));
+        toast({
+          title: "Material completado",
+          description: `Se sumaron ${activity.points} puntos a tu curso y ranking.`,
+          className: "bg-success text-success-foreground border-none",
+        });
+        setActiveActivity(null);
+      }
+
+      setTick((current) => current + 1);
+    } catch (error) {
+      console.error("Error guardando progreso y puntos:", error);
+      toast({
+        title: "No se pudo guardar el progreso",
+        description: "Tu resultado permanece en pantalla. Intenta nuevamente antes de salir.",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsSavingProgress(false);
+    }
   };
 
   if (activeActivity) {
@@ -464,9 +600,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         {activeActivity.type === "quiz" ? (
           <QuizViewer
             activity={activeActivity}
-            onComplete={(attemptData: QuizAttempt) => {
-              handleActivityComplete(activeActivity, attemptData);
-            }}
+            onComplete={(attemptData: QuizAttempt) =>
+              handleActivityComplete(activeActivity, attemptData)
+            }
+            onClose={() => setActiveActivity(null)}
           />
         ) : (
           <ActivityViewer
