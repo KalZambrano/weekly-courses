@@ -606,6 +606,9 @@ export default function TeacherCoursesPage() {
               semana: quizSemana,
             }),
           });
+
+          console.log(quizQuestions)
+          console.warn(quizTitle)
         } else {
           // Por si no tenía evaluación asignada aún
           await fetchApi(config.endpoints.evaluacionCurso.create, {

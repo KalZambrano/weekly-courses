@@ -456,8 +456,6 @@ export default function AdminCoursesPage() {
     } finally {
       setSubmittingQuiz(false)
     }
-    console.log(quizQuestions)
-    console.log(quizTitle)
   }
 
   const onDeleteMaterialLocal = async (materialId: number) => {
