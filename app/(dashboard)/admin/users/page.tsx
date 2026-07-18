@@ -67,6 +67,7 @@ export default function AdminUsersPage() {
   const [stDni, setStDni] = useState('')
   const [stPhone, setStPhone] = useState('')
   const [stEmail, setStEmail] = useState('')
+  const [stPassword, setStPassword] = useState('')
   const [submittingSt, setSubmittingSt] = useState(false)
 
   // Estados del Formulario de Estudiante (Edición)
@@ -162,6 +163,7 @@ export default function AdminUsersPage() {
     if (!validateDni(stDni)) newErrors.stDni = "El DNI debe contener exactamente 8 números."
     if (!validatePhone(stPhone)) newErrors.stPhone = "El Celular debe contener exactamente 9 números."
     if (!validateEmail(stEmail)) newErrors.stEmail = "Ingresa un formato de correo electrónico válido."
+    if (stPassword.length < 4) newErrors.stPassword = "La contraseña debe tener al menos 4 caracteres."
 
     if (Object.keys(newErrors).length > 0) {
       setErrCreateSt(newErrors)
@@ -183,12 +185,12 @@ export default function AdminUsersPage() {
           correoEstudiante: stEmail,
           habilitadoEstudiante: true,
           rolEstudiante: 'ESTUDIANTE',
-          passwordEstudiante: 'student123'
+          passwordEstudiante: stPassword
         })
       })
 
       toast.success("¡Estudiante creado con éxito!", {
-        description: `Se registró a ${fullName} con contraseña temporal 'student123'.`
+        description: `Se registró a ${fullName} correctamente.`
       })
 
       setStName('')
@@ -197,6 +199,7 @@ export default function AdminUsersPage() {
       setStDni('')
       setStPhone('')
       setStEmail('')
+      setStPassword('')
       setIsStudentOpen(false)
       setTick(t => t + 1)
     } catch (error) {
@@ -750,7 +753,7 @@ export default function AdminUsersPage() {
               Nuevo Estudiante
             </DialogTitle>
             <DialogDescription className="text-slate-500">
-              Registra un nuevo estudiante. La contraseña por defecto de acceso se configurará en <strong className="text-slate-700">student123</strong>.
+              Registra los datos y la contraseña de acceso del nuevo estudiante.
             </DialogDescription>
           </DialogHeader>
 
@@ -848,6 +851,22 @@ export default function AdminUsersPage() {
                 />
               </div>
               {errCreateSt.stEmail && <p className="text-red-500 text-xs">{errCreateSt.stEmail}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="st-password" className="text-slate-600 font-medium">Contraseña</Label>
+              <Input
+                id="st-password"
+                type="password"
+                placeholder="Mínimo 4 caracteres"
+                value={stPassword}
+                onChange={(e) => setStPassword(e.target.value)}
+                minLength={4}
+                autoComplete="new-password"
+                required
+                className={`rounded-xl border-slate-200 focus-visible:ring-blue-200 ${errCreateSt.stPassword ? 'border-red-500 focus-visible:ring-red-200' : ''}`}
+              />
+              {errCreateSt.stPassword && <p className="text-red-500 text-xs">{errCreateSt.stPassword}</p>}
             </div>
 
             <DialogFooter className="pt-4">
